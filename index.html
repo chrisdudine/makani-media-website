@@ -32,6 +32,15 @@
 @media(max-width:1100px){.nav .menu{display:none}}
 @media(max-width:620px){.nav-inner{height:auto;min-height:66px;flex-wrap:wrap;padding-top:16px;padding-bottom:16px;gap:14px}.nav-actions{width:100%;gap:8px}.nav-actions .btn{flex:1;padding:12px 8px;font-size:11px;letter-spacing:0}}
 </style>
+<style>
+@media(min-width:1101px){
+  .nav-inner{width:100%;max-width:none;display:grid;grid-template-columns:auto minmax(0,1fr) calc(100% / 3);gap:0}
+  .nav-inner>.brand{margin-left:max(20px,calc((100vw - 1180px) / 2))}
+  .nav-inner>.menu{justify-content:flex-end;gap:24px;padding-right:24px;padding-left:24px}
+  .nav-actions{padding-left:18px;padding-right:32px;gap:12px;justify-content:flex-end}
+  .nav-actions .btn{font-size:11px;padding:13px 12px;letter-spacing:.02em}
+}
+</style>
 </head>
 <body>
 <header class="nav"><div class="container nav-inner"><a class="brand" href="#top">MAKANI MEDIA</a><nav class="menu" aria-label="Primary navigation"><a href="#industries">INDUSTRIES</a><a href="#process">PROCESS</a><a href="pricing.html">PRICING</a><a href="#contact">CONTACT</a></nav><div class="nav-actions"><a class="btn btn-light" href="#contact">Schedule Consultation</a><a class="btn btn-light" href="#contact">Book a Shoot</a></div></div></header>
