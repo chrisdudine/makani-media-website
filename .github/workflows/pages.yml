@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -23,18 +23,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set header button text black
-        run: |
-          sed -i 's/background:#2ec0fc;color:#fff;text-transform:uppercase;font-weight:800/background:#2ec0fc;color:#000;text-transform:uppercase;font-weight:800/' index.html
-      - name: Commit source update
-        run: |
-          if ! git diff --quiet -- index.html; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add index.html
-            git commit -m "Set header button text to black"
-            git push
-          fi
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
