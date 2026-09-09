@@ -1,0 +1,9 @@
+name = "makani-media-api"
+main = "worker/src/index.js"
+compatibility_date = "2026-09-07"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "makani-media"
+database_id = "514ec4c8-012e-40b0-b426-c3228b4f6bdf"
+migrations_dir = "worker/migrations"
