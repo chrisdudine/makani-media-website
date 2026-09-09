@@ -369,6 +369,13 @@
       .nav-cta-group .nav-cta{flex:1;padding:11px 8px;font-size:11px;letter-spacing:.04em}
     }
   </style>
+  <style>
+    .menu-toggle{display:none;align-items:center;gap:9px;min-height:44px;padding:10px 13px;border:1px solid rgba(127,224,220,.48);border-radius:999px;background:rgba(127,224,220,.08);color:var(--accent2);font:700 12px/1 inherit;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+    .menu-toggle-icon{position:relative;width:18px;height:12px;border-top:1.5px solid currentColor;border-bottom:1.5px solid currentColor}.menu-toggle-icon:after{content:"";position:absolute;left:0;right:0;top:4px;border-top:1.5px solid currentColor}
+    .mobile-menu{display:none;background:#071014;border-top:1px solid rgba(255,255,255,.08)}.mobile-menu-inner{display:grid;padding:10px 0 18px}.mobile-menu a{min-height:48px;display:flex;align-items:center;padding:0 4px;border-bottom:1px solid rgba(255,255,255,.08);color:#d9e5e8;font-size:13px;letter-spacing:.08em;text-transform:uppercase}.mobile-menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:14px}.mobile-menu-actions a{justify-content:center;min-height:46px;padding:8px;border:1px solid rgba(46,192,252,.65);border-radius:999px;background:#2ec0fc;color:#fff;font-size:11px;font-weight:700;letter-spacing:.02em;text-align:center}
+    @media(max-width:1050px){header .nav{min-height:68px;flex-wrap:nowrap;padding:0}.nav>nav{display:none}.menu-toggle{display:inline-flex}.mobile-menu.is-open{display:block}}
+    @media(max-width:620px){header .nav{min-height:64px;gap:10px}.brand{font-size:14px}.brand small{letter-spacing:.27em}.mobile-menu-actions{grid-template-columns:1fr}}
+  </style>
 </head>
 
 <body>
@@ -386,10 +393,12 @@
         <a href="index.html#contact">Contact</a>
         <div class="nav-cta-group">
           <a href="index.html#contact" class="nav-cta">SCHEDULE CONSULTATION</a>
-          <a href="index.html#contact" class="nav-cta">BOOK A SHOOT</a>
+          <a href="book-shoot.html" class="nav-cta">BOOK A SHOOT</a>
         </div>
       </nav>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu"><span>Menu</span><span class="menu-toggle-icon" aria-hidden="true"></span></button>
     </div>
+    <nav class="mobile-menu" id="mobile-menu" aria-label="Mobile navigation"><div class="wrap mobile-menu-inner"><a href="index.html">Home</a><a href="index.html#industries">Industries</a><a href="pricing.html" aria-current="page">Pricing</a><a href="index.html#contact">Contact</a><div class="mobile-menu-actions"><a href="schedule-consultation.html">Schedule Consultation</a><a href="book-shoot.html">Book a Shoot</a></div></div></nav>
   </header>
 
   <main>
@@ -603,5 +612,8 @@
       <span>Drone + Visual Media • Maui, Hawaiʻi</span>
     </div>
   </footer>
+  <script>
+  (() => { const toggle=document.querySelector('.menu-toggle'),menu=document.getElementById('mobile-menu'); if(!toggle||!menu)return; const close=()=>{menu.classList.remove('is-open');toggle.setAttribute('aria-expanded','false')}; toggle.addEventListener('click',()=>{const open=!menu.classList.contains('is-open');menu.classList.toggle('is-open',open);toggle.setAttribute('aria-expanded',String(open))}); menu.querySelectorAll('a').forEach(a=>a.addEventListener('click',close)); document.addEventListener('keydown',e=>{if(e.key==='Escape')close()}); window.addEventListener('resize',()=>{if(innerWidth>1050)close()}); })();
+  </script>
 </body>
 </html>
