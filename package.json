@@ -1,0 +1,13 @@
+{
+  "name": "makani-media-website",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write \"*.html\" \"assets/**/*.{css,js}\" \"worker/src/**/*.js\" \"tests/*.{js,mjs}\" \"*.md\" \"docs/*.md\" \"*.json\"",
+    "format:check": "prettier --check \"*.html\" \"assets/**/*.{css,js}\" \"worker/src/**/*.js\" \"tests/*.{js,mjs}\" \"*.md\" \"docs/*.md\" \"*.json\"",
+    "test": "node --test tests/source.test.mjs tests/worker.test.mjs",
+    "test:browser": "node tests/serve.mjs"
+  },
+  "devDependencies": {
+    "prettier": "3.9.6"
+  }
+}

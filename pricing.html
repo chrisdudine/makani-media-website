@@ -1,619 +1,399 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pricing | Makani Media</title>
-  <meta name="description" content="Makani Media drone photography, video, commercial production, and monthly media plans for Maui businesses, properties, construction, tourism, and more." />
-  <style>
-    :root{
-      --bg:#071014;
-      --bg2:#0b171c;
-      --panel:#0d1c22;
-      --panel2:#10232a;
-      --line:rgba(255,255,255,.10);
-      --text:#f3f8f9;
-      --muted:#9fb2b8;
-      --accent:#7fe0dc;
-      --accent2:#b4fff4;
-      --shadow:0 24px 70px rgba(0,0,0,.28);
-      --radius:20px;
-      --max:1180px;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pricing | Makani Media</title>
+    <meta
+      name="description"
+      content="Makani Media drone photography, video, commercial production, and monthly media plans for Maui businesses, properties, construction, tourism, and more."
+    />
+    <link rel="stylesheet" href="assets/css/pricing.css" />
+  </head>
 
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{
-      margin:0;
-      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at 78% 8%, rgba(82,206,201,.09), transparent 28%),
-        radial-gradient(circle at 20% 28%, rgba(255,255,255,.035), transparent 22%),
-        linear-gradient(180deg,var(--bg),#081216 45%,#061014);
-      color:var(--text);
-      line-height:1.5;
-    }
+  <body>
+    <header>
+      <div class="wrap nav">
+        <a class="brand" href="index.html">
+          MAKANI MEDIA
+          <small>DRONE + VISUAL MEDIA</small>
+        </a>
 
-    a{color:inherit;text-decoration:none}
-    .wrap{width:min(var(--max),calc(100% - 40px));margin:auto}
-
-    header{
-      position:sticky;
-      top:0;
-      z-index:40;
-      backdrop-filter:blur(18px);
-      background:rgba(7,16,20,.76);
-      border-bottom:1px solid rgba(255,255,255,.07);
-    }
-
-    .nav{
-      min-height:74px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:28px;
-    }
-
-    .brand{
-      display:flex;
-      flex-direction:column;
-      line-height:.95;
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      font-weight:800;
-      font-size:18px;
-    }
-
-    .brand small{
-      margin-top:7px;
-      font-size:8px;
-      font-weight:600;
-      letter-spacing:.38em;
-      color:var(--muted);
-    }
-
-    nav{display:flex;align-items:center;gap:28px}
-    nav a{
-      color:#bdcbd0;
-      font-size:13px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      transition:.2s ease;
-    }
-    nav a:hover, nav a.active{color:white}
-
-    .nav-cta{
-      border:1px solid rgba(127,224,220,.48);
-      background:rgba(127,224,220,.08);
-      padding:11px 16px;
-      border-radius:999px;
-      color:var(--accent2);
-    }
-
-    .hero{
-      padding:108px 0 70px;
-      text-align:center;
-    }
-    .eyebrow{
-      color:var(--accent);
-      font-size:12px;
-      letter-spacing:.24em;
-      text-transform:uppercase;
-      font-weight:700;
-      margin-bottom:18px;
-    }
-    h1{
-      font-size:clamp(44px,7vw,84px);
-      line-height:.98;
-      margin:0 auto;
-      letter-spacing:-.045em;
-      max-width:900px;
-    }
-    .hero p{
-      max-width:700px;
-      margin:26px auto 0;
-      color:var(--muted);
-      font-size:18px;
-    }
-
-    section{padding:56px 0}
-    .section-head{
-      display:flex;
-      justify-content:space-between;
-      align-items:end;
-      gap:30px;
-      margin-bottom:25px;
-    }
-    .section-head h2{
-      font-size:clamp(30px,4vw,48px);
-      margin:0;
-      letter-spacing:-.035em;
-    }
-    .section-head p{
-      max-width:570px;
-      margin:0;
-      color:var(--muted);
-    }
-
-    .table-shell{
-      background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.015));
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-    }
-    .price-table{
-      width:100%;
-      border-collapse:collapse;
-      min-width:820px;
-    }
-    .price-table th,.price-table td{
-      padding:18px 20px;
-      border-bottom:1px solid var(--line);
-      border-right:1px solid var(--line);
-      text-align:center;
-    }
-    .price-table th:first-child,.price-table td:first-child{
-      text-align:left;
-      color:#c6d3d7;
-      width:25%;
-    }
-    .price-table th:last-child,.price-table td:last-child{border-right:0}
-    .price-table tr:last-child td{border-bottom:0}
-    .price-table thead th{
-      padding-top:26px;
-      padding-bottom:24px;
-      background:rgba(255,255,255,.018);
-      vertical-align:top;
-    }
-    .plan-name{
-      display:block;
-      text-transform:uppercase;
-      font-size:12px;
-      letter-spacing:.17em;
-      color:#c9d5d9;
-      margin-bottom:9px;
-    }
-    .price{
-      display:block;
-      font-size:34px;
-      line-height:1;
-      letter-spacing:-.035em;
-      color:white;
-    }
-    .per{
-      display:block;
-      margin-top:7px;
-      font-size:11px;
-      color:var(--muted);
-      font-weight:500;
-    }
-    .featured{
-      background:
-        linear-gradient(180deg,rgba(127,224,220,.12),rgba(127,224,220,.03)) !important;
-      position:relative;
-    }
-    .badge{
-      display:inline-block;
-      margin-bottom:10px;
-      border:1px solid rgba(127,224,220,.34);
-      background:rgba(127,224,220,.10);
-      color:var(--accent2);
-      font-size:9px;
-      font-weight:800;
-      letter-spacing:.16em;
-      text-transform:uppercase;
-      padding:6px 9px;
-      border-radius:999px;
-    }
-    .check{color:var(--accent2);font-weight:900}
-    .dash{color:#52646a}
-    .table-scroll{overflow-x:auto}
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-height:43px;
-      padding:0 17px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.15);
-      font-size:11px;
-      font-weight:800;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      transition:.2s ease;
-      background:rgba(255,255,255,.035);
-    }
-    .btn:hover{
-      transform:translateY(-1px);
-      border-color:rgba(127,224,220,.45);
-      background:rgba(127,224,220,.08);
-    }
-    .btn.primary{
-      background:var(--accent);
-      color:#061014;
-      border-color:transparent;
-    }
-
-    .custom{
-      margin-top:22px;
-      padding:28px 30px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:25px;
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      background:linear-gradient(115deg,rgba(127,224,220,.08),rgba(255,255,255,.02));
-    }
-    .custom h3{margin:0 0 5px;font-size:21px}
-    .custom p{margin:0;color:var(--muted)}
-
-    .partner{
-      margin-top:22px;
-      border-radius:26px;
-      padding:42px;
-      background:
-        radial-gradient(circle at 88% 18%, rgba(127,224,220,.16), transparent 25%),
-        linear-gradient(135deg,#10242b,#0b171c 62%,#091318);
-      border:1px solid rgba(127,224,220,.18);
-      display:grid;
-      grid-template-columns:1.2fr .8fr;
-      gap:40px;
-      align-items:center;
-      box-shadow:var(--shadow);
-    }
-    .partner h3{
-      font-size:36px;
-      margin:6px 0 7px;
-      letter-spacing:-.035em;
-    }
-    .partner .lead{color:#dbe7ea;font-size:18px;margin:0 0 18px}
-    .partner p{color:var(--muted)}
-    .partner-price{
-      text-align:right;
-    }
-    .partner-price .big{
-      font-size:44px;
-      font-weight:800;
-      letter-spacing:-.04em;
-    }
-    .partner-price span{color:var(--muted)}
-    .partner-price .btn{margin-top:20px}
-
-    .addons{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:14px 34px;
-      padding:20px 28px;
-      background:rgba(255,255,255,.02);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-    }
-    .addon{
-      display:flex;
-      justify-content:space-between;
-      gap:18px;
-      padding:14px 0;
-      border-bottom:1px solid rgba(255,255,255,.07);
-    }
-    .addon:nth-last-child(-n+2){border-bottom:0}
-    .addon span:last-child{font-weight:800;color:white;white-space:nowrap}
-    .addon span:first-child{color:#c5d3d7}
-
-    .footnote{
-      text-align:center;
-      max-width:760px;
-      margin:38px auto 0;
-      color:#81959b;
-      font-size:12px;
-    }
-
-    .cta{
-      margin:70px 0 90px;
-      padding:60px 28px;
-      text-align:center;
-      border-radius:28px;
-      border:1px solid var(--line);
-      background:
-        radial-gradient(circle at 50% 0%,rgba(127,224,220,.12),transparent 34%),
-        rgba(255,255,255,.02);
-    }
-    .cta h2{font-size:clamp(34px,5vw,58px);margin:0 0 15px;letter-spacing:-.04em}
-    .cta p{color:var(--muted);max-width:620px;margin:0 auto 26px}
-
-    footer{
-      border-top:1px solid var(--line);
-      padding:30px 0 40px;
-      color:#7f9197;
-      font-size:12px;
-    }
-    .footer-row{display:flex;justify-content:space-between;gap:25px;align-items:center}
-
-    @media (max-width:850px){
-      .nav > nav a:not(.nav-cta){display:none}
-      .hero{padding-top:78px}
-      .section-head{display:block}
-      .section-head p{margin-top:12px}
-      .partner{grid-template-columns:1fr}
-      .partner-price{text-align:left}
-      .addons{grid-template-columns:1fr}
-      .addon:nth-last-child(2){border-bottom:1px solid rgba(255,255,255,.07)}
-    }
-
-    @media (max-width:560px){
-      .wrap{width:min(100% - 24px,var(--max))}
-      header .wrap{width:min(100% - 20px,var(--max))}
-      .nav{min-height:66px}
-      .brand{font-size:15px}
-      .nav-cta{padding:9px 12px}
-      .hero{padding:64px 0 44px}
-      .hero p{font-size:16px}
-      section{padding:42px 0}
-      .custom{align-items:flex-start;flex-direction:column}
-      .partner{padding:28px 22px}
-      .partner-price .big{font-size:37px}
-      .addons{padding:12px 20px}
-      .footer-row{display:block}
-      .footer-row span{display:block;margin-top:8px}
-    }
-  </style>
-<style>
-    .nav-cta-group{display:flex;align-items:center;gap:12px}
-    .nav-cta-group .nav-cta{white-space:nowrap;text-align:center}
-    @media(max-width:1050px){header .nav > nav a:not(.nav-cta){display:none}}
-    @media(max-width:620px){
-      header .nav{flex-wrap:wrap;gap:16px;padding-top:16px;padding-bottom:16px}
-      header nav,.nav-cta-group{width:100%}
-      .nav-cta-group{gap:8px}
-      .nav-cta-group .nav-cta{flex:1;padding:11px 8px;font-size:11px;letter-spacing:.04em}
-    }
-  </style>
-  <style>
-    .menu-toggle{display:none;align-items:center;gap:9px;min-height:44px;padding:10px 13px;border:1px solid rgba(127,224,220,.48);border-radius:999px;background:rgba(127,224,220,.08);color:var(--accent2);font:700 12px/1 inherit;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
-    .menu-toggle-icon{position:relative;width:18px;height:12px;border-top:1.5px solid currentColor;border-bottom:1.5px solid currentColor}.menu-toggle-icon:after{content:"";position:absolute;left:0;right:0;top:4px;border-top:1.5px solid currentColor}
-    .mobile-menu{display:none;background:#071014;border-top:1px solid rgba(255,255,255,.08)}.mobile-menu-inner{display:grid;padding:10px 0 18px}.mobile-menu a{min-height:48px;display:flex;align-items:center;padding:0 4px;border-bottom:1px solid rgba(255,255,255,.08);color:#d9e5e8;font-size:13px;letter-spacing:.08em;text-transform:uppercase}.mobile-menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:14px}.mobile-menu-actions a{justify-content:center;min-height:46px;padding:8px;border:1px solid rgba(127,224,220,.48);border-radius:999px;background:rgba(127,224,220,.08);color:var(--accent2);font-size:11px;font-weight:700;letter-spacing:.02em;text-align:center}
-    @media(max-width:1050px){header .nav{min-height:68px;flex-wrap:nowrap;padding:0}.nav>nav{display:none}.menu-toggle{display:inline-flex}.mobile-menu.is-open{display:block}}
-    @media(max-width:620px){header .nav{min-height:64px;gap:10px}.brand{font-size:14px}.brand small{letter-spacing:.27em}.mobile-menu-actions{grid-template-columns:1fr}}
-  </style>
-</head>
-
-<body>
-  <header>
-    <div class="wrap nav">
-      <a class="brand" href="index.html">
-        MAKANI MEDIA
-        <small>DRONE + VISUAL MEDIA</small>
-      </a>
-
-      <nav aria-label="Primary navigation">
-        <a href="index.html">Home</a>
-        <a href="index.html#industries">Industries</a>
-        <a href="pricing.html" class="active" aria-current="page">Pricing</a>
-        <a href="index.html#contact">Contact</a>
-        <div class="nav-cta-group">
-          <a href="index.html#contact" class="nav-cta">SCHEDULE CONSULTATION</a>
-          <a href="book-shoot.html" class="nav-cta">BOOK A SHOOT</a>
-        </div>
-      </nav>
-      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu"><span>Menu</span><span class="menu-toggle-icon" aria-hidden="true"></span></button>
-    </div>
-    <nav class="mobile-menu" id="mobile-menu" aria-label="Mobile navigation"><div class="wrap mobile-menu-inner"><a href="index.html">Home</a><a href="index.html#industries">Industries</a><a href="pricing.html" aria-current="page">Pricing</a><a href="index.html#contact">Contact</a><div class="mobile-menu-actions"><a href="schedule-consultation.html">Schedule Consultation</a><a href="book-shoot.html">Book a Shoot</a></div></div></nav>
-  </header>
-
-  <main>
-    <section class="hero">
-      <div class="wrap">
-        <div class="eyebrow">Simple pricing. Flexible coverage.</div>
-        <h1>Media plans built around your needs.</h1>
-        <p>
-          Choose a one-time shoot or ongoing monthly coverage. Every Makani Media project is designed
-          around professional imagery, efficient delivery, and content you can actually use.
-        </p>
-      </div>
-    </section>
-
-    <section>
-      <div class="wrap">
-        <div class="section-head">
-          <div>
-            <div class="eyebrow">One-time projects</div>
-            <h2>Book a single shoot.</h2>
+        <nav aria-label="Primary navigation">
+          <a href="index.html">Home</a>
+          <a href="index.html#industries">Industries</a>
+          <a href="pricing.html" class="active" aria-current="page">Pricing</a>
+          <a href="index.html#contact">Contact</a>
+          <div class="nav-cta-group">
+            <a href="index.html#contact" class="nav-cta"
+              >SCHEDULE CONSULTATION</a
+            >
+            <a href="book-shoot.html" class="nav-cta">BOOK A SHOOT</a>
           </div>
+        </nav>
+        <button
+          class="menu-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+          ><span>Menu</span
+          ><span class="menu-toggle-icon" aria-hidden="true"></span
+        ></button>
+      </div>
+      <nav class="mobile-menu" id="mobile-menu" aria-label="Mobile navigation"
+        ><div class="wrap mobile-menu-inner"
+          ><a href="index.html">Home</a
+          ><a href="index.html#industries">Industries</a
+          ><a href="pricing.html" aria-current="page">Pricing</a
+          ><a href="index.html#contact">Contact</a
+          ><div class="mobile-menu-actions"
+            ><a href="schedule-consultation.html">Schedule Consultation</a
+            ><a href="book-shoot.html">Book a Shoot</a></div
+          ></div
+        ></nav
+      >
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap">
+          <div class="eyebrow">Simple pricing. Flexible coverage.</div>
+          <h1>Media plans built around your needs.</h1>
           <p>
-            Ideal for property listings, marketing campaigns, construction updates, tourism, commercial
-            projects, and businesses that need fresh visual content without a recurring plan.
+            Choose a one-time shoot or ongoing monthly coverage. Every Makani
+            Media project is designed around professional imagery, efficient
+            delivery, and content you can actually use.
           </p>
         </div>
+      </section>
 
-        <div class="table-shell table-scroll">
-          <table class="price-table">
-            <thead>
-              <tr>
-                <th>Included</th>
-                <th>
-                  <span class="plan-name">Aerial Photo</span>
-                  <span class="price">$225</span>
-                  <span class="per">one-time</span>
-                </th>
-                <th class="featured">
-                  <span class="badge">Most Popular</span>
-                  <span class="plan-name">Photo + Video</span>
-                  <span class="price">$325</span>
-                  <span class="per">one-time</span>
-                </th>
-                <th>
-                  <span class="plan-name">Signature Media</span>
-                  <span class="price">$475</span>
-                  <span class="per">one-time</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>On location</td><td>30 min</td><td class="featured">45 min</td><td>90 min</td></tr>
-              <tr><td>Edited photos</td><td>10–15</td><td class="featured">10–15</td><td>20+</td></tr>
-              <tr><td>4K drone footage</td><td class="dash">—</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Edited video</td><td class="dash">—</td><td class="featured">30–45 sec</td><td>60–90 sec</td></tr>
-              <tr><td>Vertical social reel</td><td class="dash">—</td><td class="featured dash">—</td><td class="check">✓</td></tr>
-              <tr><td>Professional color grade</td><td class="check">✓</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Licensed music</td><td class="dash">—</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Logo / branding</td><td class="dash">—</td><td class="featured dash">—</td><td class="check">✓</td></tr>
-              <tr><td>Web + social formats</td><td class="check">✓</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Commercial usage</td><td class="check">✓</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Delivery</td><td>48 hr</td><td class="featured">48 hr</td><td>48 hr</td></tr>
-              <tr>
-                <td></td>
-                <td><a class="btn" href="index.html#contact">Book Shoot</a></td>
-                <td class="featured"><a class="btn primary" href="index.html#contact">Book Shoot</a></td>
-                <td><a class="btn" href="index.html#contact">Book Shoot</a></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="custom">
-          <div>
-            <h3>Custom Production — from $650</h3>
-            <p>Construction, commercial, industrial, resorts, tourism, events, ocean work, and multi-location projects.</p>
-          </div>
-          <a class="btn" href="index.html#contact">Request a Quote</a>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="wrap">
-        <div class="section-head">
-          <div>
-            <div class="eyebrow">Monthly media plans</div>
-            <h2>Keep your content moving.</h2>
-          </div>
-          <p>
-            Recurring coverage gives your business a consistent stream of current imagery while reducing
-            the cost per visit and simplifying scheduling, delivery, and media organization.
-          </p>
-        </div>
-
-        <div class="table-shell table-scroll">
-          <table class="price-table">
-            <thead>
-              <tr>
-                <th>Included</th>
-                <th>
-                  <span class="plan-name">Essential</span>
-                  <span class="price">$495</span>
-                  <span class="per">per month</span>
-                </th>
-                <th class="featured">
-                  <span class="badge">Most Popular</span>
-                  <span class="plan-name">Professional</span>
-                  <span class="price">$895</span>
-                  <span class="per">per month</span>
-                </th>
-                <th>
-                  <span class="plan-name">Pro</span>
-                  <span class="price">$1,495</span>
-                  <span class="per">per month</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Shoots / month</td><td>1</td><td class="featured">2</td><td>4</td></tr>
-              <tr><td>Edited photos</td><td class="check">✓</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>4K drone video</td><td class="check">✓</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Edited videos</td><td>1</td><td class="featured">2</td><td>4</td></tr>
-              <tr><td>Social formats</td><td class="check">✓</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Cloud media library</td><td class="check">✓</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Commercial usage</td><td class="check">✓</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Consistent repeat angles</td><td class="dash">—</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Branding / logo</td><td class="dash">—</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Priority scheduling</td><td class="dash">—</td><td class="featured check">✓</td><td class="check">✓</td></tr>
-              <tr><td>Monthly highlight video</td><td class="dash">—</td><td class="featured dash">—</td><td class="check">✓</td></tr>
-              <tr><td>Turnaround</td><td>48 hr</td><td class="featured">48 hr</td><td>24–48 hr</td></tr>
-              <tr>
-                <td></td>
-                <td><a class="btn" href="index.html#contact">Get Started</a></td>
-                <td class="featured"><a class="btn primary" href="index.html#contact">Get Started</a></td>
-                <td><a class="btn" href="index.html#contact">Get Started</a></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="partner">
-          <div>
-            <div class="eyebrow">Makani Partner</div>
-            <h3>Your outsourced visual media department.</h3>
-            <p class="lead">Custom recurring coverage for businesses that need more than a standard media plan.</p>
+      <section>
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">One-time projects</div>
+              <h2>Book a single shoot.</h2>
+            </div>
             <p>
-              Up to 6 shoots per month • Drone photography • Drone video • Ground media • Short-form social content •
-              Professional editing • Brand integration • Organized media library • Monthly highlight video •
-              Priority scheduling • Content prepared for web and social
+              Ideal for property listings, marketing campaigns, construction
+              updates, tourism, commercial projects, and businesses that need
+              fresh visual content without a recurring plan.
             </p>
           </div>
 
-          <div class="partner-price">
-            <span>Starting at</span>
-            <div class="big">$2,495/mo</div>
-            <a class="btn primary" href="index.html#contact">Build a Custom Plan</a>
+          <div class="table-shell table-scroll">
+            <table class="price-table">
+              <thead>
+                <tr>
+                  <th>Included</th>
+                  <th>
+                    <span class="plan-name">Aerial Photo</span>
+                    <span class="price">$225</span>
+                    <span class="per">one-time</span>
+                  </th>
+                  <th class="featured">
+                    <span class="badge">Most Popular</span>
+                    <span class="plan-name">Photo + Video</span>
+                    <span class="price">$325</span>
+                    <span class="per">one-time</span>
+                  </th>
+                  <th>
+                    <span class="plan-name">Signature Media</span>
+                    <span class="price">$475</span>
+                    <span class="per">one-time</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  ><td>On location</td><td>30 min</td
+                  ><td class="featured">45 min</td><td>90 min</td></tr
+                >
+                <tr
+                  ><td>Edited photos</td><td>10–15</td
+                  ><td class="featured">10–15</td><td>20+</td></tr
+                >
+                <tr
+                  ><td>4K drone footage</td><td class="dash">—</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Edited video</td><td class="dash">—</td
+                  ><td class="featured">30–45 sec</td><td>60–90 sec</td></tr
+                >
+                <tr
+                  ><td>Vertical social reel</td><td class="dash">—</td
+                  ><td class="featured dash">—</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Professional color grade</td><td class="check">✓</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Licensed music</td><td class="dash">—</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Logo / branding</td><td class="dash">—</td
+                  ><td class="featured dash">—</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Web + social formats</td><td class="check">✓</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Commercial usage</td><td class="check">✓</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Delivery</td><td>48 hr</td><td class="featured">48 hr</td
+                  ><td>48 hr</td></tr
+                >
+                <tr>
+                  <td></td>
+                  <td
+                    ><a class="btn" href="index.html#contact">Book Shoot</a></td
+                  >
+                  <td class="featured"
+                    ><a class="btn primary" href="index.html#contact"
+                      >Book Shoot</a
+                    ></td
+                  >
+                  <td
+                    ><a class="btn" href="index.html#contact">Book Shoot</a></td
+                  >
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="custom">
+            <div>
+              <h3>Custom Production — from $650</h3>
+              <p
+                >Construction, commercial, industrial, resorts, tourism, events,
+                ocean work, and multi-location projects.</p
+              >
+            </div>
+            <a class="btn" href="index.html#contact">Request a Quote</a>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section>
-      <div class="wrap">
-        <div class="section-head">
-          <div>
-            <div class="eyebrow">Optional services</div>
-            <h2>Add what you need.</h2>
+      <section>
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Monthly media plans</div>
+              <h2>Keep your content moving.</h2>
+            </div>
+            <p>
+              Recurring coverage gives your business a consistent stream of
+              current imagery while reducing the cost per visit and simplifying
+              scheduling, delivery, and media organization.
+            </p>
           </div>
-          <p>
-            Expand any one-time project or recurring plan with additional production, editing, locations,
-            or specialty deliverables.
+
+          <div class="table-shell table-scroll">
+            <table class="price-table">
+              <thead>
+                <tr>
+                  <th>Included</th>
+                  <th>
+                    <span class="plan-name">Essential</span>
+                    <span class="price">$495</span>
+                    <span class="per">per month</span>
+                  </th>
+                  <th class="featured">
+                    <span class="badge">Most Popular</span>
+                    <span class="plan-name">Professional</span>
+                    <span class="price">$895</span>
+                    <span class="per">per month</span>
+                  </th>
+                  <th>
+                    <span class="plan-name">Pro</span>
+                    <span class="price">$1,495</span>
+                    <span class="per">per month</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  ><td>Shoots / month</td><td>1</td><td class="featured">2</td
+                  ><td>4</td></tr
+                >
+                <tr
+                  ><td>Edited photos</td><td class="check">✓</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>4K drone video</td><td class="check">✓</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Edited videos</td><td>1</td><td class="featured">2</td
+                  ><td>4</td></tr
+                >
+                <tr
+                  ><td>Social formats</td><td class="check">✓</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Cloud media library</td><td class="check">✓</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Commercial usage</td><td class="check">✓</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Consistent repeat angles</td><td class="dash">—</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Branding / logo</td><td class="dash">—</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Priority scheduling</td><td class="dash">—</td
+                  ><td class="featured check">✓</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Monthly highlight video</td><td class="dash">—</td
+                  ><td class="featured dash">—</td><td class="check">✓</td></tr
+                >
+                <tr
+                  ><td>Turnaround</td><td>48 hr</td
+                  ><td class="featured">48 hr</td><td>24–48 hr</td></tr
+                >
+                <tr>
+                  <td></td>
+                  <td
+                    ><a class="btn" href="index.html#contact"
+                      >Get Started</a
+                    ></td
+                  >
+                  <td class="featured"
+                    ><a class="btn primary" href="index.html#contact"
+                      >Get Started</a
+                    ></td
+                  >
+                  <td
+                    ><a class="btn" href="index.html#contact"
+                      >Get Started</a
+                    ></td
+                  >
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="partner">
+            <div>
+              <div class="eyebrow">Makani Partner</div>
+              <h3>Your outsourced visual media department.</h3>
+              <p class="lead"
+                >Custom recurring coverage for businesses that need more than a
+                standard media plan.</p
+              >
+              <p>
+                Up to 6 shoots per month • Drone photography • Drone video •
+                Ground media • Short-form social content • Professional editing
+                • Brand integration • Organized media library • Monthly
+                highlight video • Priority scheduling • Content prepared for web
+                and social
+              </p>
+            </div>
+
+            <div class="partner-price">
+              <span>Starting at</span>
+              <div class="big">$2,495/mo</div>
+              <a class="btn primary" href="index.html#contact"
+                >Build a Custom Plan</a
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Optional services</div>
+              <h2>Add what you need.</h2>
+            </div>
+            <p>
+              Expand any one-time project or recurring plan with additional
+              production, editing, locations, or specialty deliverables.
+            </p>
+          </div>
+
+          <div class="addons">
+            <div class="addon"
+              ><span>Additional shoot</span><span>from $195</span></div
+            >
+            <div class="addon"
+              ><span>30–45 sec social reel</span><span>$125</span></div
+            >
+            <div class="addon"
+              ><span>60–90 sec cinematic edit</span><span>$250</span></div
+            >
+            <div class="addon"
+              ><span>Vertical social version</span><span>$75</span></div
+            >
+            <div class="addon"
+              ><span>Raw footage delivery</span><span>$100</span></div
+            >
+            <div class="addon"
+              ><span>Ground photo / video</span><span>$150/hr</span></div
+            >
+            <div class="addon"
+              ><span>Additional location</span><span>from $150</span></div
+            >
+            <div class="addon"
+              ><span>Property boundary overlay</span><span>$75</span></div
+            >
+            <div class="addon"><span>24-hour rush</span><span>$100</span></div>
+            <div class="addon"
+              ><span>Mapping / 3D modeling</span><span>Custom</span></div
+            >
+            <div class="addon"
+              ><span>Inspections / reporting</span><span>Custom</span></div
+            >
+            <div class="addon"
+              ><span>Specialty production</span><span>Custom</span></div
+            >
+          </div>
+
+          <p class="footnote">
+            Pricing is based on standard Maui-area projects and normal operating
+            conditions. Airspace restrictions, permits, travel, complex
+            productions, extended scheduling, or specialized deliverables may
+            require a custom quote.
           </p>
-        </div>
 
-        <div class="addons">
-          <div class="addon"><span>Additional shoot</span><span>from $195</span></div>
-          <div class="addon"><span>30–45 sec social reel</span><span>$125</span></div>
-          <div class="addon"><span>60–90 sec cinematic edit</span><span>$250</span></div>
-          <div class="addon"><span>Vertical social version</span><span>$75</span></div>
-          <div class="addon"><span>Raw footage delivery</span><span>$100</span></div>
-          <div class="addon"><span>Ground photo / video</span><span>$150/hr</span></div>
-          <div class="addon"><span>Additional location</span><span>from $150</span></div>
-          <div class="addon"><span>Property boundary overlay</span><span>$75</span></div>
-          <div class="addon"><span>24-hour rush</span><span>$100</span></div>
-          <div class="addon"><span>Mapping / 3D modeling</span><span>Custom</span></div>
-          <div class="addon"><span>Inspections / reporting</span><span>Custom</span></div>
-          <div class="addon"><span>Specialty production</span><span>Custom</span></div>
+          <div class="cta">
+            <div class="eyebrow">Start a project</div>
+            <h2>Tell us what you need.</h2>
+            <p>
+              Choose a package or tell us about your project and we’ll build the
+              right level of coverage around your goals.
+            </p>
+            <a class="btn primary" href="schedule-consultation.html"
+              >SCHEDULE CONSULTATION</a
+            >
+          </div>
         </div>
+      </section>
+    </main>
 
-        <p class="footnote">
-          Pricing is based on standard Maui-area projects and normal operating conditions. Airspace restrictions,
-          permits, travel, complex productions, extended scheduling, or specialized deliverables may require a custom quote.
-        </p>
-
-        <div class="cta">
-          <div class="eyebrow">Start a project</div>
-          <h2>Tell us what you need.</h2>
-          <p>
-            Choose a package or tell us about your project and we’ll build the right level of coverage around your goals.
-          </p>
-          <a class="btn primary" href="schedule-consultation.html">SCHEDULE CONSULTATION</a>
-        </div>
+    <footer>
+      <div class="wrap footer-row">
+        <strong>MAKANI MEDIA</strong>
+        <span>Drone + Visual Media • Maui, Hawaiʻi</span>
       </div>
-    </section>
-  </main>
-
-  <footer>
-    <div class="wrap footer-row">
-      <strong>MAKANI MEDIA</strong>
-      <span>Drone + Visual Media • Maui, Hawaiʻi</span>
-    </div>
-  </footer>
-  <script>
-  (() => { const toggle=document.querySelector('.menu-toggle'),menu=document.getElementById('mobile-menu'); if(!toggle||!menu)return; const close=()=>{menu.classList.remove('is-open');toggle.setAttribute('aria-expanded','false')}; toggle.addEventListener('click',()=>{const open=!menu.classList.contains('is-open');menu.classList.toggle('is-open',open);toggle.setAttribute('aria-expanded',String(open))}); menu.querySelectorAll('a').forEach(a=>a.addEventListener('click',close)); document.addEventListener('keydown',e=>{if(e.key==='Escape')close()}); window.addEventListener('resize',()=>{if(innerWidth>1050)close()}); })();
-  </script>
-</body>
+    </footer>
+    <script src="assets/js/mobile-menu.js" data-breakpoint="1050"></script>
+  </body>
 </html>
