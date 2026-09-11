@@ -20,17 +20,14 @@ const ACTIVE_CONSULTATION_STATUSES = new Set(["pending", "confirmed", "paid"]);
 const hawaiiDateTime = (date, time) => new Date(`${date}T${time}:00-10:00`);
 const addMinutes = (date, minutes) => new Date(date.getTime() + minutes * 60_000);
 const overlaps = (startA, endA, startB, endB) => startA < endB && endA > startB;
-const isSaturday = (date) => hawaiiDateTime(date, "12:00").getUTCDay() === 6;
 
 async function getAvailability(env, date) {
   if (!DATE_RE.test(date)) return null;
 
   const slots = Array.from({ length: 9 }, (_, index) => {
     const hour = index + 8;
-    return { time: `${String(hour).padStart(2, "0")}:00`, available: !isSaturday(date) };
+    return { time: `${String(hour).padStart(2, "0")}:00`, available: true };
   });
-
-  if (isSaturday(date)) return slots;
 
   const dayStart = hawaiiDateTime(date, "00:00");
   const dayEnd = addMinutes(dayStart, 24 * 60);
@@ -79,7 +76,7 @@ async function getAvailability(env, date) {
     const slotEnd = addMinutes(slotStart, 60);
     return {
       ...slot,
-      available: slot.available && !blocks.some(([start, end]) => overlaps(slotStart, slotEnd, start, end)),
+      available: !blocks.some(([start, end]) => overlaps(slotStart, slotEnd, start, end)),
     };
   });
 }
@@ -202,8 +199,6 @@ export default {
       const preferredTime = text(body.preferredTime);
       if (!DATE_RE.test(preferredDate) || !TIME_RE.test(preferredTime))
         return json({ error: "Please select a valid consultation date and time." }, 400);
-      if (isSaturday(preferredDate))
-        return json({ error: "Consultations are not available on Saturdays." }, 400);
 
       try {
         const slots = await getAvailability(env, preferredDate);
