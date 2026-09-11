@@ -29,7 +29,7 @@ form.addEventListener("submit", async (event) => {
     source: "website-book-shoot",
   };
   try {
-    const response = await fetch("/api/consultation", {
+    const response = await fetch("/api/shoot-request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
