@@ -41,14 +41,13 @@ function renderCalendar() {
     const day = new Date(start);
     day.setDate(start.getDate() + i);
     const key = dateKey(day),
-      saturday = day.getDay() === 6,
       past = day < hawaiiToday,
       other = day.getMonth() !== visibleMonth.getMonth(),
       button = document.createElement("button");
     button.type = "button";
-    button.className = `calendar-day${other ? " other" : ""}${saturday || past ? " blocked" : ""}${key === selectedDate ? " selected" : ""}${key === dateKey(hawaiiToday) ? " today" : ""}`;
+    button.className = `calendar-day${other ? " other" : ""}${past ? " blocked" : ""}${key === selectedDate ? " selected" : ""}${key === dateKey(hawaiiToday) ? " today" : ""}`;
     button.textContent = day.getDate();
-    button.disabled = saturday || past || other;
+    button.disabled = past || other;
     button.setAttribute(
       "aria-label",
       `${dateLabel(day)}${button.disabled ? ", unavailable" : ", available"}`,
