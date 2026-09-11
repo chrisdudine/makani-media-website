@@ -331,7 +331,7 @@
     .footer-row{display:flex;justify-content:space-between;gap:25px;align-items:center}
 
     @media (max-width:850px){
-      nav a:not(.nav-cta){display:none}
+      .nav > nav a:not(.nav-cta){display:none}
       .hero{padding-top:78px}
       .section-head{display:block}
       .section-head p{margin-top:12px}
@@ -361,7 +361,7 @@
 <style>
     .nav-cta-group{display:flex;align-items:center;gap:12px}
     .nav-cta-group .nav-cta{white-space:nowrap;text-align:center}
-    @media(max-width:1050px){header nav a:not(.nav-cta){display:none}}
+    @media(max-width:1050px){header .nav > nav a:not(.nav-cta){display:none}}
     @media(max-width:620px){
       header .nav{flex-wrap:wrap;gap:16px;padding-top:16px;padding-bottom:16px}
       header nav,.nav-cta-group{width:100%}
