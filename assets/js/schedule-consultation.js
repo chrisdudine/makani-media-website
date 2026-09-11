@@ -41,14 +41,14 @@ function renderCalendar() {
     const day = new Date(start);
     day.setDate(start.getDate() + i);
     const key = dateKey(day),
-      weekend = day.getDay() === 0 || day.getDay() === 6,
+      saturday = day.getDay() === 6,
       past = day < hawaiiToday,
       other = day.getMonth() !== visibleMonth.getMonth(),
       button = document.createElement("button");
     button.type = "button";
-    button.className = `calendar-day${other ? " other" : ""}${weekend || past ? " blocked" : ""}${key === selectedDate ? " selected" : ""}${key === dateKey(hawaiiToday) ? " today" : ""}`;
+    button.className = `calendar-day${other ? " other" : ""}${saturday || past ? " blocked" : ""}${key === selectedDate ? " selected" : ""}${key === dateKey(hawaiiToday) ? " today" : ""}`;
     button.textContent = day.getDate();
-    button.disabled = weekend || past || other;
+    button.disabled = saturday || past || other;
     button.setAttribute(
       "aria-label",
       `${dateLabel(day)}${button.disabled ? ", unavailable" : ", available"}`,
@@ -179,7 +179,7 @@ form.addEventListener("submit", async (event) => {
     form.reset();
     selectedDate = "";
     selectionSummary.classList.remove("visible");
-    timeDate.textContent = "Select a weekday";
+    timeDate.textContent = "Select a date";
     timeSlots.innerHTML = "";
     renderCalendar();
     statusEl.className = "form-status success";
