@@ -23,6 +23,8 @@ const overlaps = (startA, endA, startB, endB) => startA < endB && endA > startB;
 
 async function getAvailability(env, date) {
   if (!DATE_RE.test(date)) return null;
+  const day = new Date(`${date}T12:00:00Z`);
+  if (Number.isNaN(day.valueOf()) || day.toISOString().slice(0, 10) !== date || day.getUTCDay() === 6) return [];
 
   const slots = Array.from({ length: 9 }, (_, index) => {
     const hour = index + 8;
