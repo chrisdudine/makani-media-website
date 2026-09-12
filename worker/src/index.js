@@ -18,11 +18,102 @@ const TIME_RE = /^(0[8-9]|1[0-6]):00$/;
 const ACTIVE_CONSULTATION_STATUSES = new Set(["pending", "confirmed", "paid"]);
 
 const hawaiiDateTime = (date, time) => new Date(`${date}T${time}:00-10:00`);
-const addMinutes = (date, minutes) => new Date(date.getTime() + minutes * 60_000);
+const addMinutes = (date, minutes) =>
+  new Date(date.getTime() + minutes * 60_000);
 const overlaps = (startA, endA, startB, endB) => startA < endB && endA > startB;
+
+const calendarConfigured = (env) =>
+  Boolean(
+    env.GOOGLE_CALENDAR_ID === "makanimediamaui@gmail.com" &&
+    env.GOOGLE_CLIENT_ID &&
+    env.GOOGLE_CLIENT_SECRET &&
+    env.GOOGLE_REFRESH_TOKEN,
+  );
+
+async function googleAccessToken(env) {
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+      refresh_token: env.GOOGLE_REFRESH_TOKEN,
+      grant_type: "refresh_token",
+    }),
+  });
+  if (!response.ok) throw new Error("Google Calendar authorization failed");
+  const result = await response.json();
+  if (!result.access_token) throw new Error("Google Calendar token missing");
+  return result.access_token;
+}
+
+async function googleBusy(env, start, end) {
+  const response = await fetch(
+    "https://www.googleapis.com/calendar/v3/freeBusy",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${await googleAccessToken(env)}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        timeMin: start.toISOString(),
+        timeMax: end.toISOString(),
+        timeZone: "Pacific/Honolulu",
+        items: [{ id: env.GOOGLE_CALENDAR_ID }],
+      }),
+    },
+  );
+  if (!response.ok) throw new Error("Google Calendar availability failed");
+  const data = await response.json();
+  const calendar = data.calendars?.[env.GOOGLE_CALENDAR_ID];
+  if (!calendar || calendar.errors?.length || !Array.isArray(calendar.busy))
+    throw new Error("Google Calendar availability incomplete");
+  return calendar.busy.map((block) => [
+    new Date(block.start),
+    new Date(block.end),
+  ]);
+}
+
+async function createGoogleEvent(
+  env,
+  id,
+  start,
+  end,
+  body,
+  kind = "consultation",
+) {
+  const eventId = `m${id.replaceAll("-", "")}`;
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(env.GOOGLE_CALENDAR_ID)}/events`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${await googleAccessToken(env)}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: eventId,
+      summary: `Makani Media ${kind} — ${text(body.name) || "client"}`,
+      description: `Client: ${text(body.name)}\nEmail: ${text(body.email)}\nPhone: ${text(body.phone)}\nMeeting: ${text(body.meetingType) || "phone"}\nProject: ${text(body.description)}`,
+      start: { dateTime: start.toISOString(), timeZone: "Pacific/Honolulu" },
+      end: { dateTime: end.toISOString(), timeZone: "Pacific/Honolulu" },
+      extendedProperties: { private: { websiteBookingId: id } },
+    }),
+  });
+  if (!response.ok && response.status !== 409)
+    throw new Error("Google Calendar event creation failed");
+  return eventId;
+}
 
 async function getAvailability(env, date) {
   if (!DATE_RE.test(date)) return null;
+  const calendarDay = new Date(`${date}T12:00:00Z`);
+  if (
+    Number.isNaN(calendarDay.valueOf()) ||
+    calendarDay.toISOString().slice(0, 10) !== date ||
+    calendarDay.getUTCDay() === 6
+  )
+    return [];
 
   const slots = Array.from({ length: 9 }, (_, index) => {
     const hour = index + 8;
@@ -63,12 +154,22 @@ async function getAvailability(env, date) {
     if (!ACTIVE_CONSULTATION_STATUSES.has(row.status)) continue;
     const start = new Date(row.start_time);
     const end = new Date(row.buffer_end_time || row.end_time);
-    if (!Number.isNaN(start.valueOf()) && !Number.isNaN(end.valueOf())) blocks.push([start, end]);
+    if (!Number.isNaN(start.valueOf()) && !Number.isNaN(end.valueOf()))
+      blocks.push([start, end]);
   }
-  for (const row of [...(shootResult.results || []), ...(calendarResult.results || [])]) {
+  for (const row of [
+    ...(shootResult.results || []),
+    ...(calendarResult.results || []),
+  ]) {
     const start = new Date(row.start_time);
     const end = new Date(row.end_time);
-    if (!Number.isNaN(start.valueOf()) && !Number.isNaN(end.valueOf())) blocks.push([start, end]);
+    if (!Number.isNaN(start.valueOf()) && !Number.isNaN(end.valueOf()))
+      blocks.push([start, end]);
+  }
+  if (env.GOOGLE_CALENDAR_ENABLED === "true") {
+    if (!calendarConfigured(env))
+      throw new Error("Business calendar is not configured");
+    blocks.push(...(await googleBusy(env, dayStart, addMinutes(dayEnd, 120))));
   }
 
   return slots.map((slot) => {
@@ -76,7 +177,9 @@ async function getAvailability(env, date) {
     const slotEnd = addMinutes(slotStart, 60);
     return {
       ...slot,
-      available: !blocks.some(([start, end]) => overlaps(slotStart, slotEnd, start, end)),
+      available: !blocks.some(([start, end]) =>
+        overlaps(slotStart, slotEnd, start, end),
+      ),
     };
   });
 }
@@ -143,7 +246,8 @@ const validContactPayload = (body) => {
   const description = text(body.description);
   if (!name || !email || !description)
     return "Name, email, and project description are required.";
-  if (!/^\S+@\S+\.\S+$/.test(email)) return "Please enter a valid email address.";
+  if (!/^\S+@\S+\.\S+$/.test(email))
+    return "Please enter a valid email address.";
   if (name.length > 160 || email.length > 320 || description.length > 5000)
     return "One or more fields are too long.";
   return "";
@@ -170,11 +274,13 @@ export default {
       });
     }
 
-    if (!env.DB) return json({ error: "Database binding is not configured." }, 500);
+    if (!env.DB)
+      return json({ error: "Database binding is not configured." }, 500);
 
     if (request.method === "GET" && url.pathname === "/api/availability") {
       const date = text(url.searchParams.get("date"));
-      if (!DATE_RE.test(date)) return json({ error: "A valid date is required." }, 400);
+      if (!DATE_RE.test(date))
+        return json({ error: "A valid date is required." }, 400);
       try {
         const slots = await getAvailability(env, date);
         return json({ date, timezone: "Pacific/Honolulu", slots });
@@ -198,17 +304,32 @@ export default {
       const preferredDate = text(body.preferredDate);
       const preferredTime = text(body.preferredTime);
       if (!DATE_RE.test(preferredDate) || !TIME_RE.test(preferredTime))
-        return json({ error: "Please select a valid consultation date and time." }, 400);
+        return json(
+          { error: "Please select a valid consultation date and time." },
+          400,
+        );
 
       try {
         const slots = await getAvailability(env, preferredDate);
         const selected = slots.find((slot) => slot.time === preferredTime);
         if (!selected?.available)
-          return json({ error: "That time is no longer available. Please choose another time." }, 409);
+          return json(
+            {
+              error:
+                "That time is no longer available. Please choose another time.",
+            },
+            409,
+          );
 
         const now = new Date().toISOString();
         const contactId = await upsertContact(env, body, now);
-        const projectId = await createProject(env, body, contactId, now, "consultation-request");
+        const projectId = await createProject(
+          env,
+          body,
+          contactId,
+          now,
+          "consultation-request",
+        );
         const consultationId = crypto.randomUUID();
         const start = hawaiiDateTime(preferredDate, preferredTime);
         const end = addMinutes(start, 60);
@@ -235,10 +356,39 @@ export default {
           )
           .run();
 
+        if (env.GOOGLE_CALENDAR_ENABLED === "true") {
+          try {
+            const eventId = await createGoogleEvent(
+              env,
+              consultationId,
+              start,
+              end,
+              body,
+            );
+            await env.DB.prepare(
+              "UPDATE consultations SET google_calendar_event_id = ?, status = 'confirmed', updated_at = ? WHERE id = ?",
+            )
+              .bind(eventId, new Date().toISOString(), consultationId)
+              .run();
+          } catch (error) {
+            console.error("Consultation calendar sync failed", error);
+            return json(
+              {
+                error:
+                  "Your request was saved, but the calendar could not confirm it. Please contact us before trying another time.",
+              },
+              503,
+            );
+          }
+        }
+
         return json({ success: true, projectId, consultationId }, 201);
       } catch (error) {
         console.error("Consultation submission failed", error);
-        return json({ error: "We could not save your request. Please try again." }, 500);
+        return json(
+          { error: "We could not save your request. Please try again." },
+          500,
+        );
       }
     }
 
@@ -255,16 +405,29 @@ export default {
       try {
         const now = new Date().toISOString();
         const contactId = await upsertContact(env, body, now);
-        const projectId = await createProject(env, body, contactId, now, "shoot-request");
+        const projectId = await createProject(
+          env,
+          body,
+          contactId,
+          now,
+          "shoot-request",
+        );
         return json({ success: true, projectId }, 201);
       } catch (error) {
         console.error("Shoot request failed", error);
-        return json({ error: "We could not save your request. Please try again." }, 500);
+        return json(
+          { error: "We could not save your request. Please try again." },
+          500,
+        );
       }
     }
 
-    if (request.method === "POST" && url.pathname === "/api/internal/shoot-booking") {
-      if (!authorizedInternalRequest(request, env)) return json({ error: "Unauthorized" }, 401);
+    if (
+      request.method === "POST" &&
+      url.pathname === "/api/internal/shoot-booking"
+    ) {
+      if (!authorizedInternalRequest(request, env))
+        return json({ error: "Unauthorized" }, 401);
       let body;
       try {
         body = await request.json();
@@ -273,8 +436,15 @@ export default {
       }
       const start = new Date(text(body.startTime));
       const end = new Date(text(body.endTime));
-      if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf()) || end <= start)
-        return json({ error: "Valid startTime and endTime are required." }, 400);
+      if (
+        Number.isNaN(start.valueOf()) ||
+        Number.isNaN(end.valueOf()) ||
+        end <= start
+      )
+        return json(
+          { error: "Valid startTime and endTime are required." },
+          400,
+        );
       const now = new Date().toISOString();
       const id = crypto.randomUUID();
       try {
@@ -294,6 +464,37 @@ export default {
             now,
           )
           .run();
+        if (
+          env.GOOGLE_CALENDAR_ENABLED === "true" &&
+          !text(body.googleCalendarEventId)
+        ) {
+          if (!calendarConfigured(env))
+            return json({ error: "Business calendar is not configured." }, 503);
+          try {
+            const eventId = await createGoogleEvent(
+              env,
+              id,
+              start,
+              end,
+              body,
+              "shoot",
+            );
+            await env.DB.prepare(
+              "UPDATE shoot_bookings SET google_calendar_event_id = ?, updated_at = ? WHERE id = ?",
+            )
+              .bind(eventId, new Date().toISOString(), id)
+              .run();
+          } catch (error) {
+            console.error("Shoot calendar sync failed", error);
+            return json(
+              {
+                error:
+                  "Shoot was saved but could not be added to the business calendar.",
+              },
+              503,
+            );
+          }
+        }
         return json({ success: true, bookingId: id }, 201);
       } catch (error) {
         console.error("Shoot confirmation failed", error);
@@ -301,8 +502,12 @@ export default {
       }
     }
 
-    if (request.method === "POST" && url.pathname === "/api/internal/calendar-blocks") {
-      if (!authorizedInternalRequest(request, env)) return json({ error: "Unauthorized" }, 401);
+    if (
+      request.method === "POST" &&
+      url.pathname === "/api/internal/calendar-blocks"
+    ) {
+      if (!authorizedInternalRequest(request, env))
+        return json({ error: "Unauthorized" }, 401);
       let body;
       try {
         body = await request.json();
@@ -316,7 +521,12 @@ export default {
           const start = new Date(text(block.startTime));
           const end = new Date(text(block.endTime));
           const externalId = text(block.externalId);
-          if (!externalId || Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf()) || end <= start)
+          if (
+            !externalId ||
+            Number.isNaN(start.valueOf()) ||
+            Number.isNaN(end.valueOf()) ||
+            end <= start
+          )
             continue;
           await env.DB.prepare(
             `INSERT INTO calendar_blocks (
