@@ -42,12 +42,13 @@ function renderCalendar() {
     day.setDate(start.getDate() + i);
     const key = dateKey(day),
       past = day < hawaiiToday,
+      saturday = day.getDay() === 6,
       other = day.getMonth() !== visibleMonth.getMonth(),
       button = document.createElement("button");
     button.type = "button";
-    button.className = `calendar-day${other ? " other" : ""}${past ? " blocked" : ""}${key === selectedDate ? " selected" : ""}${key === dateKey(hawaiiToday) ? " today" : ""}`;
+    button.className = `calendar-day${other ? " other" : ""}${past || saturday ? " blocked" : ""}${key === selectedDate ? " selected" : ""}${key === dateKey(hawaiiToday) ? " today" : ""}`;
     button.textContent = day.getDate();
-    button.disabled = past || other;
+    button.disabled = past || other || saturday;
     button.setAttribute(
       "aria-label",
       `${dateLabel(day)}${button.disabled ? ", unavailable" : ", available"}`,
@@ -58,26 +59,33 @@ function renderCalendar() {
   }
 }
 async function selectDay(day) {
-  selectedDate = dateKey(day);
+  const requestedDate = dateKey(day);
+  selectedDate = requestedDate;
   selectedDateInput.value = selectedDate;
   selectedTimeInput.value = "";
   selectionSummary.classList.remove("visible");
   renderCalendar();
   timeDate.textContent = dateLabel(new Date(`${selectedDate}T12:00:00Z`));
   timeSlots.innerHTML = '<span class="hint">Loading availability…</span>';
-  let availability = {};
   try {
     const response = await fetch(
       `/api/availability?date=${encodeURIComponent(selectedDate)}`,
     );
-    if (response.ok) {
-      const data = await response.json();
-      (data.slots || []).forEach(
-        (slot) => (availability[slot.time] = slot.available !== false),
-      );
-    }
-  } catch (error) {}
-  renderTimes(availability);
+    if (!response.ok) throw new Error("Availability request failed");
+    const data = await response.json();
+    if (selectedDate !== requestedDate) return;
+    if (!Array.isArray(data.slots) || data.slots.length !== 9)
+      throw new Error("Incomplete availability response");
+    renderTimes(
+      Object.fromEntries(
+        data.slots.map((slot) => [slot.time, slot.available === true]),
+      ),
+    );
+  } catch (error) {
+    if (selectedDate === requestedDate)
+      timeSlots.innerHTML =
+        '<span class="hint">Availability is temporarily unavailable. Please try again shortly.</span>';
+  }
 }
 function renderTimes(availability) {
   timeSlots.innerHTML = "";

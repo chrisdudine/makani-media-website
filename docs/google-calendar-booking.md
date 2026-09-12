@@ -1,0 +1,11 @@
+# Business calendar booking setup
+
+The website's Cloudflare Worker requires its **own** Google Calendar authorization. Connecting Google Calendar to ChatGPT does not authorize the Worker. The Worker accepts only `makanimediamaui@gmail.com` as `GOOGLE_CALENDAR_ID` and keeps Google integration disabled unless `GOOGLE_CALENDAR_ENABLED` is exactly `true`.
+
+1. In a Google Cloud project controlled by Makani Media, enable Google Calendar API, configure the OAuth consent screen, and create a web application OAuth client. Authorize **makanimediamaui@gmail.com** with offline access and the `https://www.googleapis.com/auth/calendar.events` and `https://www.googleapis.com/auth/calendar.freebusy` scopes. Keep the client secret, authorization code, and refresh token out of GitHub and chat. Use a consent configuration that keeps the refresh token usable; Google testing-mode tokens may expire.
+2. Store `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REFRESH_TOKEN` as Cloudflare Worker secrets, and set `GOOGLE_CALENDAR_ID` to `makanimediamaui@gmail.com`. Keep `GOOGLE_CALENDAR_ENABLED` unset for now.
+3. Deploy the Worker, then test the Google token against that calendar's metadata, verify free/busy, and create and delete a test event in the **business** calendar. Only then set `GOOGLE_CALENDAR_ENABLED=true` and deploy again.
+
+When enabled, `/api/availability` combines D1 reservations with Google's live busy intervals. `/api/consultation` stores the request, reserves a two-hour window in D1, and creates a one-hour event in the business calendar. A confirmed shoot posted to `/api/internal/shoot-booking` blocks consultation availability in D1 and creates a Google event unless a preexisting `googleCalendarEventId` is supplied. The public shoot form only requests dates; it does not confirm a shoot or reserve time.
+
+The current booking flow does not process the proposed $99 payment or enforce the first-consultation-free rule. Keep this integration in review until payment and booking policy are finalized. The D1 insertion and Google event creation are separate operations, so a Google outage leaves a saved reservation requiring manual follow-up. For robust unattended booking, add an idempotent recovery job and an atomic slot claim.
