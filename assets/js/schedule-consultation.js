@@ -9,6 +9,8 @@ const hawaiiToday = new Date(
   new Date().toLocaleString("en-US", { timeZone: "Pacific/Honolulu" }),
 );
 hawaiiToday.setHours(0, 0, 0, 0);
+const blockedThrough = new Date(2026, 11, 15);
+blockedThrough.setHours(23, 59, 59, 999);
 let visibleMonth = new Date(
     hawaiiToday.getFullYear(),
     hawaiiToday.getMonth(),
@@ -42,12 +44,13 @@ function renderCalendar() {
     day.setDate(start.getDate() + i);
     const key = dateKey(day),
       past = day < hawaiiToday,
+      manuallyBlocked = day <= blockedThrough,
       other = day.getMonth() !== visibleMonth.getMonth(),
       button = document.createElement("button");
     button.type = "button";
-    button.className = `calendar-day${other ? " other" : ""}${past ? " blocked" : ""}${key === selectedDate ? " selected" : ""}${key === dateKey(hawaiiToday) ? " today" : ""}`;
+    button.className = `calendar-day${other ? " other" : ""}${past || manuallyBlocked ? " blocked" : ""}${key === selectedDate ? " selected" : ""}${key === dateKey(hawaiiToday) ? " today" : ""}`;
     button.textContent = day.getDate();
-    button.disabled = past || other;
+    button.disabled = past || manuallyBlocked || other;
     button.setAttribute(
       "aria-label",
       `${dateLabel(day)}${button.disabled ? ", unavailable" : ", available"}`,
