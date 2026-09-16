@@ -1,5 +1,5 @@
 name = "makani-media-api"
-main = "src/index.js"
+main = "src/booking-wrapper.js"
 compatibility_date = "2026-09-07"
 
 [[d1_databases]]
@@ -14,3 +14,4 @@ name = "EMAIL"
 GOOGLE_CALENDAR_ID = "makanimediamaui@gmail.com"
 GOOGLE_CALENDAR_ENABLED = "true"
 BOOKING_EMAIL_FROM = "bookings@mail.makani-media.com"
+BOOKING_NOTIFICATION_EMAIL = "makanimediamaui@gmail.com"
