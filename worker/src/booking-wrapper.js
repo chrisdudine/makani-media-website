@@ -6,6 +6,39 @@ const clean = (value) => (typeof value === "string" ? value.trim() : "");
 const hawaiiDateTime = (date, time) => new Date(`${date}T${time}:00-10:00`);
 const addMinutes = (date, minutes) => new Date(date.getTime() + minutes * 60_000);
 
+function diagnosticResponse(env) {
+  const present = (value) => Boolean(value);
+  const checks = {
+    DB: present(env.DB),
+    EMAIL: present(env.EMAIL),
+    GOOGLE_CLIENT_ID: present(env.GOOGLE_CLIENT_ID),
+    GOOGLE_CLIENT_SECRET: present(env.GOOGLE_CLIENT_SECRET),
+    GOOGLE_REFRESH_TOKEN: present(env.GOOGLE_REFRESH_TOKEN),
+    GOOGLE_CALENDAR_ENABLED: env.GOOGLE_CALENDAR_ENABLED === "true",
+    GOOGLE_CALENDAR_ID: present(env.GOOGLE_CALENDAR_ID),
+    BOOKING_EMAIL_FROM: present(env.BOOKING_EMAIL_FROM),
+    BOOKING_NOTIFICATION_EMAIL: present(env.BOOKING_NOTIFICATION_EMAIL),
+  };
+
+  return new Response(
+    JSON.stringify({
+      ok: Object.values(checks).every(Boolean),
+      checks,
+      calendarIdMatchesBusinessAccount: env.GOOGLE_CALENDAR_ID === "makanimediamaui@gmail.com",
+      emailFromConfigured: env.BOOKING_EMAIL_FROM === "bookings@mail.makani-media.com",
+      notificationEmailConfigured: env.BOOKING_NOTIFICATION_EMAIL === "makanimediamaui@gmail.com",
+    }),
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*",
+      },
+    },
+  );
+}
+
 async function automateSuccessfulBooking(env, kind, body, result) {
   const projectId = clean(result.projectId);
   const start = hawaiiDateTime(clean(body.preferredDate), clean(body.preferredTime));
@@ -73,6 +106,11 @@ async function automateSuccessfulBooking(env, kind, body, result) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    if (request.method === "GET" && url.pathname === "/api/diagnostics/booking-config") {
+      return diagnosticResponse(env);
+    }
+
     const isConsultation = request.method === "POST" && url.pathname === "/api/consultation";
     const isShoot = request.method === "POST" && url.pathname === "/api/shoot-request";
 
