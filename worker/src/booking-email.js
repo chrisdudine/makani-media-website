@@ -54,26 +54,41 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
   const title = isConsultation ? "Consultation Booking" : "Shoot Request";
   const estimate = isConsultation ? null : buildShootEstimate(body);
 
-  const customerText = [
-    `Hi ${customerName},`,
-    "",
-    `We received your Makani Media ${label} for ${dateTime}.`,
-    isConsultation
-      ? "Your requested time has been reserved while we process the booking."
-      : "We’ll review the project details and confirm the final schedule and scope with you.",
-    ...(estimate
-      ? [
-          "",
-          `Preliminary estimate: ${formatEstimateTotal(estimate)}`,
-          "A detailed preliminary estimate is attached. Final pricing is subject to project review.",
-        ]
-      : []),
-    "",
-    "Thank you,",
-    "Makani Media",
-  ].join("\n");
+  const customerText = isConsultation
+    ? [
+        `Hi ${customerName},`,
+        "",
+        `We received your Makani Media ${label} for ${dateTime}.`,
+        "Your requested time has been reserved while we process the booking.",
+        "",
+        "Thank you,",
+        "Makani Media",
+      ].join("\n")
+    : [
+        `Hi ${customerName},`,
+        "",
+        "Thank you for choosing Makani Media and for taking the time to tell us about your project. We truly appreciate the opportunity to work with you and help bring your vision to life.",
+        "",
+        `We’ve received your shoot request for ${dateTime}. We’ll review your project details, location, requested services, and scheduling requirements, then follow up to confirm the final scope and availability.`,
+        "",
+        `Your preliminary estimate is ${formatEstimateTotal(estimate)}.`,
+        "",
+        "A detailed estimate is attached for your review. Please note that this is a preliminary estimate; final pricing may be adjusted after we review the location, airspace, permits, travel requirements, operating conditions, scheduling, and any custom services.",
+        "",
+        "Thank you again for considering Makani Media. We’re grateful for the opportunity to support your project and look forward to creating something exceptional with you.",
+        "",
+        "Warmly,",
+        "",
+        "Makani Media",
+        "Drone + Visual Media",
+        "Maui, Hawaiʻi",
+        "makanimediamaui@gmail.com",
+        "makani-media.com",
+      ].join("\n");
 
-  const customerHtml = `<p>Hi ${escapeHtml(customerName)},</p><p>We received your Makani Media ${escapeHtml(label)} for <strong>${escapeHtml(dateTime)}</strong>.</p><p>${isConsultation ? "Your requested time has been reserved while we process the booking." : "We’ll review the project details and confirm the final schedule and scope with you."}</p>${estimate ? `<p><strong>Preliminary estimate: ${escapeHtml(formatEstimateTotal(estimate))}</strong><br>A detailed preliminary estimate is attached. Final pricing is subject to project review.</p>` : ""}<p>Thank you,<br>Makani Media</p>`;
+  const customerHtml = isConsultation
+    ? `<p>Hi ${escapeHtml(customerName)},</p><p>We received your Makani Media ${escapeHtml(label)} for <strong>${escapeHtml(dateTime)}</strong>.</p><p>Your requested time has been reserved while we process the booking.</p><p>Thank you,<br>Makani Media</p>`
+    : `<p>Hi ${escapeHtml(customerName)},</p><p>Thank you for choosing Makani Media and for taking the time to tell us about your project. We truly appreciate the opportunity to work with you and help bring your vision to life.</p><p>We’ve received your shoot request for <strong>${escapeHtml(dateTime)}</strong>. We’ll review your project details, location, requested services, and scheduling requirements, then follow up to confirm the final scope and availability.</p><p><strong>Your preliminary estimate is ${escapeHtml(formatEstimateTotal(estimate))}.</strong></p><p>A detailed estimate is attached for your review. Please note that this is a preliminary estimate; final pricing may be adjusted after we review the location, airspace, permits, travel requirements, operating conditions, scheduling, and any custom services.</p><p>Thank you again for considering Makani Media. We’re grateful for the opportunity to support your project and look forward to creating something exceptional with you.</p><p>Warmly,</p><p><strong>Makani Media</strong><br>Drone + Visual Media<br>Maui, Hawaiʻi<br><a href="mailto:makanimediamaui@gmail.com">makanimediamaui@gmail.com</a><br><a href="https://makani-media.com">makani-media.com</a></p>`;
 
   const businessText = [
     `New ${title} — ${customerName}`,

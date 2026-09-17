@@ -48,7 +48,16 @@ test("sends customer confirmation and complete business notification", async () 
     new TextDecoder().decode(messages[0].attachments[0].content.slice(0, 8)),
     "%PDF-1.4",
   );
-  assert.match(messages[0].text, /Preliminary estimate: \$675/);
+  assert.match(messages[0].text, /preliminary estimate is \$675/i);
+  assert.match(
+    messages[0].text,
+    /Thank you for choosing Makani Media.*bring your vision to life\./s,
+  );
+  assert.match(
+    messages[0].text,
+    /We’re grateful for the opportunity.*creating something exceptional with you\./s,
+  );
+  assert.match(messages[0].text, /Warmly,\n\nMakani Media/);
 
   const internal = messages[1];
   assert.equal(internal.to, "makanimediamaui@gmail.com");
