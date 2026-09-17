@@ -49,7 +49,7 @@ test("sends customer confirmation and complete business notification", async () 
     new TextDecoder().decode(messages[0].attachments[0].content.slice(0, 8)),
     "%PDF-1.4",
   );
-  assert.match(messages[0].text, /preliminary estimate is \$675/i);
+  assert.match(messages[0].text, /preliminary estimate is \$975/i);
   assert.match(messages[0].text, /10:00 AM HST.*1:00 PM HST/);
   assert.match(
     messages[0].text,
@@ -81,7 +81,7 @@ test("sends customer confirmation and complete business notification", async () 
     "Call at gate",
     "Aerial photos and a promotional video.",
     "Can this be delivered within one week?",
-    "Preliminary estimate: $675",
+    "Preliminary estimate: $975",
   ]) {
     assert.match(
       internal.text,

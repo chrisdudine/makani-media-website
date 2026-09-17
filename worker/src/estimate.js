@@ -51,6 +51,16 @@ export function buildShootEstimate(body) {
   const items = [
     { description: `${packageName} package`, amount: packagePrice },
   ];
+  const startHour = Number(clean(body.preferredTime).slice(0, 2));
+  const endHour = Number(clean(body.preferredEndTime).slice(0, 2));
+  const additionalHours = Math.max(0, endHour - startHour - 1);
+
+  if (Number.isFinite(additionalHours) && additionalHours > 0) {
+    items.push({
+      description: `Additional shoot time - ${additionalHours} ${additionalHours === 1 ? "hour" : "hours"} @ $150/hr`,
+      amount: additionalHours * 150,
+    });
+  }
 
   for (const addon of addons) {
     if (!addon || included.has(addon)) continue;
@@ -155,11 +165,11 @@ export function generateEstimatePdf(body, estimate, projectId) {
   for (const item of estimate.items) {
     commands.push(text(item.description, 48, y, 10));
     commands.push(text(money(item.amount), 500, y, 10, true));
-    commands.push(`0.93 0.94 0.95 RG 48 ${y - 11} 516 0.5 re S`);
-    y -= 30;
+    commands.push(`0.93 0.94 0.95 RG 48 ${y - 9} 516 0.5 re S`);
+    y -= 26;
   }
 
-  const totalBoxY = y - 28;
+  const totalBoxY = y - 42;
   commands.push(`0.94 0.97 0.97 rg 340 ${totalBoxY} 224 58 re f`);
   commands.push(
     text("PRELIMINARY TOTAL", 358, totalBoxY + 36, 9, true, "0.05 0.17 0.22"),
@@ -178,21 +188,21 @@ export function generateEstimatePdf(body, estimate, projectId) {
   let noteY = totalBoxY - 30;
   if (estimate.includedAddons.length) {
     commands.push(text("Included with selected package:", 48, noteY, 9, true));
-    noteY -= 18;
+    noteY -= 16;
     for (const line of wrap(estimate.includedAddons.join(", "), 88)) {
       commands.push(text(line, 48, noteY, 9));
-      noteY -= 13;
+      noteY -= 12;
     }
-    noteY -= 14;
+    noteY -= 10;
   }
   if (estimate.reviewItems.length) {
     commands.push(
       text("Items requiring review before final pricing:", 48, noteY, 9, true),
     );
-    noteY -= 18;
+    noteY -= 16;
     for (const line of wrap(estimate.reviewItems.join(", "), 88)) {
       commands.push(text(line, 48, noteY, 9));
-      noteY -= 13;
+      noteY -= 12;
     }
   }
 
