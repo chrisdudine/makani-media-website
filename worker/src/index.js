@@ -376,6 +376,12 @@ export default {
       }
       const validationError = validContactPayload(body);
       if (validationError) return json({ error: validationError }, 400);
+      if (
+        !["Aerial Photo", "Photo + Video", "Signature Media"].includes(
+          text(body.package),
+        )
+      )
+        return json({ error: "Please select a valid shoot package." }, 400);
 
       try {
         const date = text(body.preferredDate),

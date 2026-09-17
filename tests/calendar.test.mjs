@@ -106,6 +106,7 @@ test("blocked shoot is rejected before any insert", async (ctx) => {
         name: "Test",
         email: "test@example.com",
         description: "Test",
+        package: "Aerial Photo",
         preferredDate: "2027-01-20",
         preferredTime: "08:00",
       }),

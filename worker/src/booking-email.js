@@ -1,3 +1,9 @@
+import {
+  buildShootEstimate,
+  formatEstimateTotal,
+  generateEstimatePdf,
+} from "./estimate.js";
+
 const clean = (value) => (typeof value === "string" ? value.trim() : "");
 
 const escapeHtml = (value) =>
@@ -46,6 +52,7 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
   const isConsultation = kind === "consultation";
   const label = isConsultation ? "consultation" : "shoot request";
   const title = isConsultation ? "Consultation Booking" : "Shoot Request";
+  const estimate = isConsultation ? null : buildShootEstimate(body);
 
   const customerText = [
     `Hi ${customerName},`,
@@ -54,12 +61,19 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
     isConsultation
       ? "Your requested time has been reserved while we process the booking."
       : "We’ll review the project details and confirm the final schedule and scope with you.",
+    ...(estimate
+      ? [
+          "",
+          `Preliminary estimate: ${formatEstimateTotal(estimate)}`,
+          "A detailed preliminary estimate is attached. Final pricing is subject to project review.",
+        ]
+      : []),
     "",
     "Thank you,",
     "Makani Media",
   ].join("\n");
 
-  const customerHtml = `<p>Hi ${escapeHtml(customerName)},</p><p>We received your Makani Media ${escapeHtml(label)} for <strong>${escapeHtml(dateTime)}</strong>.</p><p>${isConsultation ? "Your requested time has been reserved while we process the booking." : "We’ll review the project details and confirm the final schedule and scope with you."}</p><p>Thank you,<br>Makani Media</p>`;
+  const customerHtml = `<p>Hi ${escapeHtml(customerName)},</p><p>We received your Makani Media ${escapeHtml(label)} for <strong>${escapeHtml(dateTime)}</strong>.</p><p>${isConsultation ? "Your requested time has been reserved while we process the booking." : "We’ll review the project details and confirm the final schedule and scope with you."}</p>${estimate ? `<p><strong>Preliminary estimate: ${escapeHtml(formatEstimateTotal(estimate))}</strong><br>A detailed preliminary estimate is attached. Final pricing is subject to project review.</p>` : ""}<p>Thank you,<br>Makani Media</p>`;
 
   const businessText = [
     `New ${title} — ${customerName}`,
@@ -75,6 +89,7 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
     `Business: ${clean(body.business) || "Not provided"}`,
     "",
     "PROJECT",
+    `Package: ${clean(body.package) || "Not provided"}`,
     `Project type: ${clean(body.projectType) || "Not provided"}`,
     `Frequency: ${clean(body.frequency) || "Not provided"}`,
     `Services: ${list(body.services)}`,
@@ -88,7 +103,21 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
     "",
     "QUESTIONS / NOTES",
     clean(body.questions) || "None",
+    ...(estimate
+      ? ["", `Preliminary estimate: ${formatEstimateTotal(estimate)}`]
+      : []),
   ].join("\n");
+
+  const customerAttachments = estimate
+    ? [
+        {
+          filename: `makani-media-estimate-${projectId.slice(0, 8)}.pdf`,
+          content: generateEstimatePdf(body, estimate, projectId),
+          type: "application/pdf",
+          disposition: "attachment",
+        },
+      ]
+    : undefined;
 
   const results = await Promise.allSettled([
     env.EMAIL.send({
@@ -98,6 +127,7 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
       subject: `Makani Media — ${title}`,
       text: customerText,
       html: customerHtml,
+      ...(customerAttachments ? { attachments: customerAttachments } : {}),
     }),
     env.EMAIL.send({
       to: businessEmail,

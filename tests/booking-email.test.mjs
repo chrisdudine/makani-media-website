@@ -27,9 +27,10 @@ test("sends customer confirmation and complete business notification", async () 
       preferredTime: "10:00",
       location: "Wailea, Maui",
       projectType: "Commercial real estate",
+      package: "Photo + Video",
       frequency: "One-time shoot",
-      services: ["Drone video", "Photography"],
-      addons: ["Vertical social edit"],
+      services: ["Drone Video", "Ground Photography"],
+      addons: ["Raw Footage", "24-Hour Rush"],
       budget: "$1,000–$2,500",
       accessDetails: "Call at gate",
       description: "Aerial photos and a promotional video.",
@@ -40,6 +41,14 @@ test("sends customer confirmation and complete business notification", async () 
   assert.deepEqual(messageIds, ["message-1", "message-2"]);
   assert.equal(messages.length, 2);
   assert.equal(messages[0].to, "test@example.com");
+  assert.equal(messages[0].attachments.length, 1);
+  assert.equal(messages[0].attachments[0].type, "application/pdf");
+  assert.equal(messages[0].attachments[0].disposition, "attachment");
+  assert.equal(
+    new TextDecoder().decode(messages[0].attachments[0].content.slice(0, 8)),
+    "%PDF-1.4",
+  );
+  assert.match(messages[0].text, /Preliminary estimate: \$675/);
 
   const internal = messages[1];
   assert.equal(internal.to, "makanimediamaui@gmail.com");
@@ -53,13 +62,15 @@ test("sends customer confirmation and complete business notification", async () 
     "Test Business",
     "Wailea, Maui",
     "Commercial real estate",
+    "Photo + Video",
     "One-time shoot",
-    "Drone video, Photography",
-    "Vertical social edit",
+    "Drone Video, Ground Photography",
+    "Raw Footage, 24-Hour Rush",
     "$1,000–$2,500",
     "Call at gate",
     "Aerial photos and a promotional video.",
     "Can this be delivered within one week?",
+    "Preliminary estimate: $675",
   ]) {
     assert.match(
       internal.text,

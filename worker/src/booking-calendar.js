@@ -11,15 +11,24 @@ async function accessToken(env) {
       grant_type: "refresh_token",
     }),
   });
-  if (!response.ok) throw new Error(`Google token request failed (${response.status})`);
+  if (!response.ok)
+    throw new Error(`Google token request failed (${response.status})`);
   const data = await response.json();
   if (!data.access_token) throw new Error("Google access token missing");
   return data.access_token;
 }
 
-export async function createBookingCalendarEvent(env, { kind, body, start, end, projectId }) {
+export async function createBookingCalendarEvent(
+  env,
+  { kind, body, start, end, projectId },
+) {
   if (env.GOOGLE_CALENDAR_ENABLED !== "true") return null;
-  if (!env.GOOGLE_CALENDAR_ID || !env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.GOOGLE_REFRESH_TOKEN) {
+  if (
+    !env.GOOGLE_CALENDAR_ID ||
+    !env.GOOGLE_CLIENT_ID ||
+    !env.GOOGLE_CLIENT_SECRET ||
+    !env.GOOGLE_REFRESH_TOKEN
+  ) {
     throw new Error("Google Calendar is not fully configured");
   }
 
@@ -35,8 +44,13 @@ export async function createBookingCalendarEvent(env, { kind, body, start, end, 
     `Phone: ${clean(body.phone) || "Not provided"}`,
     `Business: ${clean(body.business) || "Not provided"}`,
     `Project type: ${clean(body.projectType) || "Not provided"}`,
+    !isConsultation && clean(body.package)
+      ? `Package: ${clean(body.package)}`
+      : "",
     clean(body.description) ? `Description: ${clean(body.description)}` : "",
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   const event = {
     summary,
@@ -60,8 +74,14 @@ export async function createBookingCalendarEvent(env, { kind, body, start, end, 
 
   if (!response.ok) {
     const detail = await response.text();
-    console.error("Google Calendar event creation failed", response.status, detail.slice(0, 500));
-    throw new Error(`Google Calendar event creation failed (${response.status})`);
+    console.error(
+      "Google Calendar event creation failed",
+      response.status,
+      detail.slice(0, 500),
+    );
+    throw new Error(
+      `Google Calendar event creation failed (${response.status})`,
+    );
   }
   return response.json();
 }

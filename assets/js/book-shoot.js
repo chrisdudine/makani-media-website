@@ -82,6 +82,7 @@ form.addEventListener("submit", async (event) => {
     email: String(fd.get("email") || "").trim(),
     phone: String(fd.get("phone") || "").trim(),
     projectType: String(fd.get("projectType") || "").trim(),
+    package: String(fd.get("package") || "").trim(),
     location: String(fd.get("location") || "").trim(),
     preferredDate: String(fd.get("preferredDate") || "").trim(),
     preferredTime: String(fd.get("preferredTime") || "").trim(),
