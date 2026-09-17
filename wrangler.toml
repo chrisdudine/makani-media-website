@@ -1,5 +1,5 @@
 name = "makani-media-api"
-main = "worker/src/index.js"
+main = "worker/src/booking-wrapper.js"
 compatibility_date = "2026-09-07"
 
 [[d1_databases]]
@@ -7,3 +7,12 @@ binding = "DB"
 database_name = "makani-media"
 database_id = "514ec4c8-012e-40b0-b426-c3228b4f6bdf"
 migrations_dir = "worker/migrations"
+
+[[send_email]]
+name = "EMAIL"
+
+[vars]
+GOOGLE_CALENDAR_ID = "makanimediamaui@gmail.com"
+GOOGLE_CALENDAR_ENABLED = "true"
+BOOKING_EMAIL_FROM = "bookings@mail.makani-media.com"
+BOOKING_NOTIFICATION_EMAIL = "makanimediamaui@gmail.com"
