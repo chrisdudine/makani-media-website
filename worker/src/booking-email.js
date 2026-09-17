@@ -23,6 +23,12 @@ const formatHawaiiDateTime = (date, time) => {
   }).format(instant);
 };
 
+const list = (value) => {
+  if (!Array.isArray(value)) return clean(value) || "Not provided";
+  const items = value.map(clean).filter(Boolean);
+  return items.length ? items.join(", ") : "Not provided";
+};
+
 export async function deliverBookingEmails(env, { kind, body, projectId }) {
   if (!env.EMAIL) throw new Error("EMAIL binding is not configured");
 
@@ -31,11 +37,15 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
 
   const customerEmail = clean(body.email).toLowerCase();
   const customerName = clean(body.name) || "there";
-  const businessEmail = clean(env.BOOKING_NOTIFICATION_EMAIL) || "makanimediamaui@gmail.com";
-  const dateTime = formatHawaiiDateTime(clean(body.preferredDate), clean(body.preferredTime));
+  const businessEmail =
+    clean(env.BOOKING_NOTIFICATION_EMAIL) || "makanimediamaui@gmail.com";
+  const dateTime = formatHawaiiDateTime(
+    clean(body.preferredDate),
+    clean(body.preferredTime),
+  );
   const isConsultation = kind === "consultation";
   const label = isConsultation ? "consultation" : "shoot request";
-  const title = isConsultation ? "Consultation request received" : "Shoot request received";
+  const title = isConsultation ? "Consultation Booking" : "Shoot Request";
 
   const customerText = [
     `Hi ${customerName},`,
@@ -52,19 +62,33 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
   const customerHtml = `<p>Hi ${escapeHtml(customerName)},</p><p>We received your Makani Media ${escapeHtml(label)} for <strong>${escapeHtml(dateTime)}</strong>.</p><p>${isConsultation ? "Your requested time has been reserved while we process the booking." : "We’ll review the project details and confirm the final schedule and scope with you."}</p><p>Thank you,<br>Makani Media</p>`;
 
   const businessText = [
-    title,
+    `New ${title} — ${customerName}`,
+    "",
+    "APPOINTMENT",
+    `Requested time: ${dateTime}`,
+    `Meeting / location: ${clean(body.meetingMethod) || clean(body.location) || clean(body.meetingLocation) || "Not provided"}`,
+    "",
+    "CUSTOMER",
     `Name: ${customerName}`,
     `Email: ${customerEmail}`,
     `Phone: ${clean(body.phone) || "Not provided"}`,
     `Business: ${clean(body.business) || "Not provided"}`,
-    `Requested time: ${dateTime}`,
+    "",
+    "PROJECT",
     `Project type: ${clean(body.projectType) || "Not provided"}`,
-    `Location: ${clean(body.location) || clean(body.meetingLocation) || "Not provided"}`,
+    `Frequency: ${clean(body.frequency) || "Not provided"}`,
+    `Services: ${list(body.services)}`,
+    `Add-ons: ${list(body.addons)}`,
+    `Budget: ${clean(body.budget) || "Not provided"}`,
+    `Access details: ${clean(body.accessDetails) || "Not provided"}`,
     `Project ID: ${projectId}`,
     "",
-    `Description: ${clean(body.description)}`,
-    clean(body.questions) ? `Questions: ${clean(body.questions)}` : "",
-  ].filter(Boolean).join("\n");
+    "DESCRIPTION",
+    clean(body.description) || "Not provided",
+    "",
+    "QUESTIONS / NOTES",
+    clean(body.questions) || "None",
+  ].join("\n");
 
   const results = await Promise.allSettled([
     env.EMAIL.send({
@@ -79,14 +103,15 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
       to: businessEmail,
       from,
       replyTo: customerEmail,
-      subject: `${title}: ${customerName}`,
+      subject: `New ${title} — ${customerName} — ${clean(body.preferredDate)}`,
       text: businessText,
     }),
   ]);
 
   const failures = results.filter((result) => result.status === "rejected");
   if (failures.length) {
-    for (const failure of failures) console.error("Booking email failed", failure.reason);
+    for (const failure of failures)
+      console.error("Booking email failed", failure.reason);
     throw new Error(`Failed to send ${failures.length} booking email(s)`);
   }
 
