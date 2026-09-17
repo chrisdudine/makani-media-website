@@ -246,9 +246,9 @@ async function run(side, file, width) {
         click('label[for="a1"]');
         if (file === "book-shoot.html") {
           click('label[for="p1"]');
-          doc.querySelector("#preferredDate").value = "2026-10-12";
-          doc.querySelector("#preferredTime").value = "10:00";
-          doc.querySelector("#alternateDate").value = "2026-10-13";
+          doc.querySelector('[name="preferredDate"]').value = "2026-10-12";
+          doc.querySelector('[name="preferredTime"]').value = "10:00";
+          doc.querySelector('[name="preferredEndTime"]').value = "13:00";
         }
       };
       const form = doc.querySelector("form");

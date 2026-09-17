@@ -25,6 +25,7 @@ test("sends customer confirmation and complete business notification", async () 
       business: "Test Business",
       preferredDate: "2026-10-12",
       preferredTime: "10:00",
+      preferredEndTime: "13:00",
       location: "Wailea, Maui",
       projectType: "Commercial real estate",
       package: "Photo + Video",
@@ -49,6 +50,7 @@ test("sends customer confirmation and complete business notification", async () 
     "%PDF-1.4",
   );
   assert.match(messages[0].text, /preliminary estimate is \$675/i);
+  assert.match(messages[0].text, /10:00 AM HST.*1:00 PM HST/);
   assert.match(
     messages[0].text,
     /Thank you for choosing Makani Media.*bring your vision to life\./s,

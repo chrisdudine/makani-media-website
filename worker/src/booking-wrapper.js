@@ -4,7 +4,8 @@ import { createBookingCalendarEvent } from "./booking-calendar.js";
 
 const clean = (value) => (typeof value === "string" ? value.trim() : "");
 const hawaiiDateTime = (date, time) => new Date(`${date}T${time}:00-10:00`);
-const addMinutes = (date, minutes) => new Date(date.getTime() + minutes * 60_000);
+const addMinutes = (date, minutes) =>
+  new Date(date.getTime() + minutes * 60_000);
 
 function diagnosticResponse(env) {
   const present = (value) => Boolean(value);
@@ -24,9 +25,12 @@ function diagnosticResponse(env) {
     JSON.stringify({
       ok: Object.values(checks).every(Boolean),
       checks,
-      calendarIdMatchesBusinessAccount: env.GOOGLE_CALENDAR_ID === "makanimediamaui@gmail.com",
-      emailFromConfigured: env.BOOKING_EMAIL_FROM === "bookings@mail.makani-media.com",
-      notificationEmailConfigured: env.BOOKING_NOTIFICATION_EMAIL === "makanimediamaui@gmail.com",
+      calendarIdMatchesBusinessAccount:
+        env.GOOGLE_CALENDAR_ID === "makanimediamaui@gmail.com",
+      emailFromConfigured:
+        env.BOOKING_EMAIL_FROM === "bookings@mail.makani-media.com",
+      notificationEmailConfigured:
+        env.BOOKING_NOTIFICATION_EMAIL === "makanimediamaui@gmail.com",
     }),
     {
       status: 200,
@@ -41,9 +45,16 @@ function diagnosticResponse(env) {
 
 async function automateSuccessfulBooking(env, kind, body, result) {
   const projectId = clean(result.projectId);
-  const start = hawaiiDateTime(clean(body.preferredDate), clean(body.preferredTime));
-  const end = addMinutes(start, 60);
-  if (!projectId || Number.isNaN(start.valueOf())) throw new Error("Booking automation received invalid booking data");
+  const start = hawaiiDateTime(
+    clean(body.preferredDate),
+    clean(body.preferredTime),
+  );
+  const end =
+    kind === "shoot"
+      ? hawaiiDateTime(clean(body.preferredDate), clean(body.preferredEndTime))
+      : addMinutes(start, 60);
+  if (!projectId || Number.isNaN(start.valueOf()))
+    throw new Error("Booking automation received invalid booking data");
 
   let bookingId = clean(result.consultationId);
   let calendarEvent = null;
@@ -57,7 +68,14 @@ async function automateSuccessfulBooking(env, kind, body, result) {
          google_calendar_event_id, created_at, updated_at
        ) VALUES (?, ?, ?, ?, 'Pacific/Honolulu', 'confirmed', '', ?, ?)`,
     )
-      .bind(bookingId, projectId, start.toISOString(), end.toISOString(), now, now)
+      .bind(
+        bookingId,
+        projectId,
+        start.toISOString(),
+        end.toISOString(),
+        now,
+        now,
+      )
       .run();
   }
 
@@ -107,12 +125,17 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (request.method === "GET" && url.pathname === "/api/diagnostics/booking-config") {
+    if (
+      request.method === "GET" &&
+      url.pathname === "/api/diagnostics/booking-config"
+    ) {
       return diagnosticResponse(env);
     }
 
-    const isConsultation = request.method === "POST" && url.pathname === "/api/consultation";
-    const isShoot = request.method === "POST" && url.pathname === "/api/shoot-request";
+    const isConsultation =
+      request.method === "POST" && url.pathname === "/api/consultation";
+    const isShoot =
+      request.method === "POST" && url.pathname === "/api/shoot-request";
 
     if (!isConsultation && !isShoot) return api.fetch(request, env, ctx);
 
@@ -126,13 +149,21 @@ export default {
       body = await copy.json();
       result = await response.clone().json();
     } catch (error) {
-      console.error("Booking automation could not parse successful request", error);
+      console.error(
+        "Booking automation could not parse successful request",
+        error,
+      );
       return response;
     }
 
     let automation = { calendarEventCreated: false, emailSent: false };
     try {
-      automation = await automateSuccessfulBooking(env, isConsultation ? "consultation" : "shoot", body, result);
+      automation = await automateSuccessfulBooking(
+        env,
+        isConsultation ? "consultation" : "shoot",
+        body,
+        result,
+      );
     } catch (error) {
       console.error("Booking automation failed", error);
     }

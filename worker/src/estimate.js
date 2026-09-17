@@ -121,6 +121,14 @@ export function generateEstimatePdf(body, estimate, projectId) {
   const name = clean(body.name) || "Customer";
   const business = clean(body.business);
   const date = clean(body.preferredDate);
+  const startTime = clean(body.preferredTime);
+  const endTime = clean(body.preferredEndTime);
+  const requestedWhen = [
+    date,
+    startTime && endTime ? `${startTime} - ${endTime} HST` : "",
+  ]
+    .filter(Boolean)
+    .join(" | ");
   const location = clean(body.location) || "To be confirmed";
   const estimateNumber = `MM-${ascii(projectId).slice(0, 8).toUpperCase()}`;
   const commands = [
@@ -134,7 +142,7 @@ export function generateEstimatePdf(body, estimate, projectId) {
     text(name, 48, 577, 13, true),
     ...(business ? [text(business, 48, 560, 10)] : []),
     text("Requested shoot", 330, 596, 9, true, "0.12 0.67 0.63"),
-    text(date || "Date to be confirmed", 330, 577, 11, true),
+    text(requestedWhen || "Date to be confirmed", 330, 577, 11, true),
     ...wrap(location, 40)
       .slice(0, 2)
       .map((line, index) => text(line, 330, 560 - index * 14, 9)),

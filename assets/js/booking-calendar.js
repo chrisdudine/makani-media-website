@@ -1,6 +1,8 @@
 window.initBookingCalendar = function ({
   dateInput = "preferredDate",
   timeInput = "preferredTime",
+  endTimeInput = null,
+  range = false,
   summary = "60-minute consultation",
 } = {}) {
   const calendarTitle = document.getElementById("calendar-title"),
@@ -9,6 +11,9 @@ window.initBookingCalendar = function ({
     timeSlots = document.getElementById("time-slots"),
     selectedDateInput = document.getElementById(dateInput),
     selectedTimeInput = document.getElementById(timeInput),
+    selectedEndTimeInput = endTimeInput
+      ? document.getElementById(endTimeInput)
+      : null,
     selectionSummary = document.getElementById("selection-summary");
   const hawaiiToday = new Date(
     new Date().toLocaleString("en-US", { timeZone: "Pacific/Honolulu" }),
@@ -71,6 +76,7 @@ window.initBookingCalendar = function ({
     selectedDate = dateKey(day);
     selectedDateInput.value = selectedDate;
     selectedTimeInput.value = "";
+    if (selectedEndTimeInput) selectedEndTimeInput.value = "";
     selectionSummary.classList.remove("visible");
     renderCalendar();
     timeDate.textContent = dateLabel(new Date(`${selectedDate}T12:00:00Z`));
@@ -105,6 +111,10 @@ window.initBookingCalendar = function ({
   }
   function renderTimes(availability) {
     timeSlots.innerHTML = "";
+    if (range) {
+      renderTimeRange(availability);
+      return;
+    }
     for (let hour = 8; hour <= 16; hour++) {
       const value = `${String(hour).padStart(2, "0")}:00`,
         label = new Date(`2000-01-01T${value}:00`).toLocaleTimeString("en-US", {
@@ -123,6 +133,76 @@ window.initBookingCalendar = function ({
       button.addEventListener("click", () => selectTime(value, label, button));
       timeSlots.appendChild(button);
     }
+  }
+  function renderTimeRange(availability) {
+    const wrap = document.createElement("div");
+    wrap.className = "time-range";
+    const startField = document.createElement("label");
+    startField.textContent = "Start time";
+    const startSelect = document.createElement("select");
+    startSelect.setAttribute("aria-label", "Shoot start time");
+    startSelect.innerHTML = '<option value="">Select start</option>';
+    const endField = document.createElement("label");
+    endField.textContent = "End time";
+    const endSelect = document.createElement("select");
+    endSelect.setAttribute("aria-label", "Shoot end time");
+    endSelect.disabled = true;
+    endSelect.innerHTML = '<option value="">Select end</option>';
+
+    const timeLabel = (hour) =>
+      new Date(
+        `2000-01-01T${String(hour).padStart(2, "0")}:00:00`,
+      ).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
+    for (let hour = 8; hour <= 16; hour++) {
+      const value = `${String(hour).padStart(2, "0")}:00`;
+      if (availability[value] !== true) continue;
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = timeLabel(hour);
+      startSelect.appendChild(option);
+    }
+
+    startSelect.addEventListener("change", () => {
+      selectedTimeInput.value = startSelect.value;
+      if (selectedEndTimeInput) selectedEndTimeInput.value = "";
+      selectionSummary.classList.remove("visible");
+      endSelect.innerHTML = '<option value="">Select end</option>';
+      endSelect.disabled = !startSelect.value;
+      if (!startSelect.value) return;
+      const startHour = Number(startSelect.value.slice(0, 2));
+      for (
+        let endHour = startHour + 1;
+        endHour <= Math.min(startHour + 8, 17);
+        endHour++
+      ) {
+        const coveredHour = `${String(endHour - 1).padStart(2, "0")}:00`;
+        if (availability[coveredHour] !== true) break;
+        const option = document.createElement("option");
+        option.value = `${String(endHour).padStart(2, "0")}:00`;
+        option.textContent = timeLabel(endHour);
+        endSelect.appendChild(option);
+      }
+    });
+
+    endSelect.addEventListener("change", () => {
+      if (!selectedEndTimeInput) return;
+      selectedEndTimeInput.value = endSelect.value;
+      if (!startSelect.value || !endSelect.value) {
+        selectionSummary.classList.remove("visible");
+        return;
+      }
+      const duration =
+        Number(endSelect.value.slice(0, 2)) -
+        Number(startSelect.value.slice(0, 2));
+      selectionSummary.textContent = `${timeDate.textContent} · ${timeLabel(Number(startSelect.value.slice(0, 2)))}–${timeLabel(Number(endSelect.value.slice(0, 2)))} HST · ${duration} ${duration === 1 ? "hour" : "hours"}`;
+      selectionSummary.classList.add("visible");
+    });
+
+    startField.appendChild(startSelect);
+    endField.appendChild(endSelect);
+    wrap.append(startField, endField);
+    timeSlots.appendChild(wrap);
   }
   function selectTime(value, label, button) {
     selectedTimeInput.value = value;
@@ -181,6 +261,7 @@ window.initBookingCalendar = function ({
       selectedDate = "";
       selectedDateInput.value = "";
       selectedTimeInput.value = "";
+      if (selectedEndTimeInput) selectedEndTimeInput.value = "";
       selectionSummary.classList.remove("visible");
       timeDate.textContent = "Select a date";
       timeSlots.innerHTML = "";

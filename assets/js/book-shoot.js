@@ -1,6 +1,6 @@
 const calendarStyles = document.createElement("link");
 calendarStyles.rel = "stylesheet";
-calendarStyles.href = "assets/css/schedule-consultation.css";
+calendarStyles.href = "assets/css/schedule-consultation.css?v=20260917";
 document.head.appendChild(calendarStyles);
 
 const preferredDateField = document
@@ -36,15 +36,16 @@ if (preferredDateField && preferredTimeField) {
         </div>
       </div>
       <div class="time-panel">
-        <div class="time-title">Available times</div>
+        <div class="time-title">Shoot time</div>
         <div class="time-date" id="time-date">Select a date</div>
-        <p class="time-help">Choose your preferred shoot start time. We’ll confirm the final schedule, scope, and flight conditions before the booking is finalized.</p>
+        <p class="time-help">Choose hourly start and end times for a shoot lasting 1–8 hours. Unavailable time ranges cannot be selected.</p>
         <div class="time-slots" id="time-slots"></div>
         <div class="selection-summary" id="selection-summary"></div>
       </div>
     </div>
     <input type="hidden" id="calendarPreferredDate" name="preferredDate" required />
-    <input type="hidden" id="calendarPreferredTime" name="preferredTime" required />`;
+    <input type="hidden" id="calendarPreferredTime" name="preferredTime" required />
+    <input type="hidden" id="calendarEndTime" name="preferredEndTime" required />`;
   preferredDateField.parentNode.insertBefore(calendarWrap, preferredDateField);
   preferredDateField.remove();
   preferredTimeField.remove();
@@ -52,11 +53,13 @@ if (preferredDateField && preferredTimeField) {
 }
 
 const selectedDateInput = document.getElementById("calendarPreferredDate"),
-  selectedTimeInput = document.getElementById("calendarPreferredTime");
+  selectedTimeInput = document.getElementById("calendarPreferredTime"),
+  selectedEndTimeInput = document.getElementById("calendarEndTime");
 const bookingCalendar = window.initBookingCalendar({
   dateInput: "calendarPreferredDate",
   timeInput: "calendarPreferredTime",
-  summary: "preferred shoot start time",
+  endTimeInput: "calendarEndTime",
+  range: true,
 });
 const form = document.getElementById("shoot-form"),
   statusEl = document.getElementById("form-status"),
@@ -64,9 +67,14 @@ const form = document.getElementById("shoot-form"),
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!selectedDateInput?.value || !selectedTimeInput?.value) {
+  if (
+    !selectedDateInput?.value ||
+    !selectedTimeInput?.value ||
+    !selectedEndTimeInput?.value
+  ) {
     statusEl.className = "form-status error";
-    statusEl.textContent = "Please select an available shoot date and time.";
+    statusEl.textContent =
+      "Please select an available shoot date, start time, and end time.";
     document
       .querySelector(".booking-calendar")
       ?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -86,6 +94,7 @@ form.addEventListener("submit", async (event) => {
     location: String(fd.get("location") || "").trim(),
     preferredDate: String(fd.get("preferredDate") || "").trim(),
     preferredTime: String(fd.get("preferredTime") || "").trim(),
+    preferredEndTime: String(fd.get("preferredEndTime") || "").trim(),
     alternateDate: "",
     frequency: String(fd.get("frequency") || "").trim(),
     services: fd.getAll("services"),

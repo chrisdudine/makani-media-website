@@ -15,6 +15,7 @@ const list = (value) =>
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^(0[8-9]|1[0-6]):00$/;
+const END_TIME_RE = /^(0[9]|1[0-7]):00$/;
 const ACTIVE_CONSULTATION_STATUSES = new Set(["pending", "confirmed", "paid"]);
 
 const hawaiiDateTime = (date, time) => new Date(`${date}T${time}:00-10:00`);
@@ -385,15 +386,37 @@ export default {
 
       try {
         const date = text(body.preferredDate),
-          time = text(body.preferredTime);
-        if (!DATE_RE.test(date) || !TIME_RE.test(time))
-          return json({ error: "Please select a shoot date and time." }, 400);
+          time = text(body.preferredTime),
+          endTime = text(body.preferredEndTime);
+        if (
+          !DATE_RE.test(date) ||
+          !TIME_RE.test(time) ||
+          !END_TIME_RE.test(endTime)
+        )
+          return json(
+            { error: "Please select a shoot date, start time, and end time." },
+            400,
+          );
+        const startHour = Number(time.slice(0, 2));
+        const endHour = Number(endTime.slice(0, 2));
+        const durationHours = endHour - startHour;
+        if (durationHours < 1 || durationHours > 8)
+          return json({ error: "Shoot duration must be 1–8 hours." }, 400);
         const slots = await getAvailability(env, date);
-        if (!slots.some((slot) => slot.time === time && slot.available))
+        const requestedHours = Array.from(
+          { length: durationHours },
+          (_, index) => `${String(startHour + index).padStart(2, "0")}:00`,
+        );
+        if (
+          !requestedHours.every(
+            (hour) =>
+              slots.find((slot) => slot.time === hour)?.available === true,
+          )
+        )
           return json(
             {
               error:
-                "That time is no longer available. Please choose another time.",
+                "That time range is no longer available. Please choose another range.",
             },
             409,
           );

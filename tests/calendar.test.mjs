@@ -109,11 +109,32 @@ test("blocked shoot is rejected before any insert", async (ctx) => {
         package: "Aerial Photo",
         preferredDate: "2027-01-20",
         preferredTime: "08:00",
+        preferredEndTime: "10:00",
       }),
     }),
     env,
   );
   assert.equal(r.status, 409);
+});
+test("shoot range crossing a blocked hour is rejected", async (ctx) => {
+  google(ctx);
+  const r = await worker.fetch(
+    new Request("https://site/api/shoot-request", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Test",
+        email: "test@example.com",
+        description: "Test",
+        package: "Aerial Photo",
+        preferredDate: "2027-01-18",
+        preferredTime: "08:00",
+        preferredEndTime: "11:00",
+      }),
+    }),
+    env,
+  );
+  assert.equal(r.status, 409);
+  assert.match((await r.json()).error, /time range/i);
 });
 test("existing blackout applies on server too", async (ctx) => {
   google(ctx);
