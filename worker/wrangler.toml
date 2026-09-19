@@ -1,5 +1,5 @@
 name = "makani-media-api"
-main = "src/booking-wrapper.js"
+main = "src/stripe-test.js"
 compatibility_date = "2026-09-07"
 
 [[d1_databases]]
