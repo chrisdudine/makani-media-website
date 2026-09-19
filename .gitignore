@@ -5,3 +5,7 @@ node_modules/
 !.env.example
 test-results/
 regression-results/
+
+.dev.vars
+.dev.vars.*
+*test-access.json
