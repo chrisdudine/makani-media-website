@@ -172,6 +172,10 @@ export async function webhook(request, env) {
   } catch {
     return reply({ error: "Invalid Stripe signature" }, 400);
   }
+  return processVerifiedEvent(event, env, stripe);
+}
+
+async function processVerifiedEvent(event, env, stripe) {
   if (event.livemode !== false)
     return reply({ error: "Live events rejected" }, 400);
   const session = event.data.object,
@@ -278,4 +282,38 @@ export async function verifyCalendar(env, id) {
     id: event.id,
     booking: event.extendedProperties?.private?.makaniTestOrder,
   };
+}
+
+// Recovery is permitted only for an event already received through the signed webhook.
+// Stripe's authenticated API is used to re-read it before processing; the success URL
+// and browser-supplied data can never trigger fulfillment.
+export async function retryPendingPayments(env) {
+  const rows = await env.DB.prepare(
+    `SELECT o.id, (SELECT e2.id FROM stripe_test_events e2
+      WHERE e2.order_id=o.id AND e2.type IN ('checkout.session.completed','checkout.session.async_payment_succeeded')
+      ORDER BY (e2.type = 'checkout.session.async_payment_succeeded') DESC, e2.received_at DESC LIMIT 1) AS event_id
+    FROM stripe_test_orders o JOIN stripe_test_events e ON e.order_id=o.id
+    WHERE (o.calendar_id IS NULL OR o.confirmation_id IS NULL OR o.receipt_id IS NULL)
+      AND o.state <> 'test-complete' AND o.lease_until < ?
+      AND e.type IN ('checkout.session.completed','checkout.session.async_payment_succeeded')
+    GROUP BY o.id ORDER BY o.created_at LIMIT 10`,
+  )
+    .bind(Date.now())
+    .all();
+  const stripe = sdk(env);
+  const results = [];
+  for (const row of rows.results || []) {
+    try {
+      const event = await stripe.events.retrieve(row.event_id);
+      if (event.data.object.metadata?.makani_test_order !== row.id) {
+        results.push({ id: row.id, status: 409 });
+        continue;
+      }
+      const response = await processVerifiedEvent(event, env, stripe);
+      results.push({ id: row.id, status: response.status });
+    } catch {
+      results.push({ id: row.id, status: 503 });
+    }
+  }
+  return results;
 }

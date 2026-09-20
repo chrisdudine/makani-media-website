@@ -49,6 +49,16 @@ form.addEventListener("submit", async (event) => {
     const result = await response.json().catch(() => ({}));
     if (!response.ok)
       throw new Error(result.error || "Unable to submit your request.");
+    if (result.url) {
+      const checkoutUrl = new URL(result.url);
+      if (checkoutUrl.origin !== "https://checkout.stripe.com")
+        throw new Error(
+          "Unexpected payment destination. Please contact Makani Media.",
+        );
+      statusEl.textContent = "Opening secure payment…";
+      window.location.assign(checkoutUrl.href);
+      return;
+    }
     form.reset();
     bookingCalendar.reset();
     statusEl.className = "form-status success";

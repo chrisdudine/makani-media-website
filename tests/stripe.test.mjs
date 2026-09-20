@@ -4,7 +4,10 @@ import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import Stripe from "stripe";
 import { priceOrder, validate, sdk } from "../worker/src/stripe-checkout.js";
-import { webhook } from "../worker/src/stripe-fulfillment.js";
+import {
+  webhook,
+  retryPendingPayments,
+} from "../worker/src/stripe-fulfillment.js";
 const body = {
   kind: "consultation",
   name: "Test",
@@ -179,7 +182,8 @@ test("webhook authenticates payment, persists booking, retries delivery, and avo
   const original = globalThis.fetch;
   globalThis.fetch = async (input) => {
     const url = typeof input === "string" ? input : input.url;
-    if (url.includes("api.stripe.com")) return Response.json(session);
+    if (url.includes("api.stripe.com"))
+      return Response.json(url.includes("/events/") ? event : session);
     if (url.includes("oauth2.googleapis.com"))
       return Response.json({ access_token: "unit-token" });
     if (url.includes("www.googleapis.com")) {
@@ -204,7 +208,9 @@ test("webhook authenticates payment, persists booking, retries delivery, and avo
     assert.equal(sql.prepare("SELECT count(*) AS n FROM contacts").get().n, 0);
     assert.equal((await webhook(signed(event), env)).status, 503);
     assert.equal(sent.length, 1);
-    assert.equal((await webhook(signed(event), env)).status, 200);
+    assert.deepEqual(await retryPendingPayments(env), [
+      { id: session.client_reference_id, status: 200 },
+    ]);
     assert.equal((await webhook(signed(event), env)).status, 200);
     assert.equal(calendarWrites, 1);
     assert.equal(sent.length, 2);

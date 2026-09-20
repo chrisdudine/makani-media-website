@@ -1,6 +1,10 @@
 import legacy from "./booking-wrapper.js";
 import { checkout, sdk, reply, recipient } from "./stripe-checkout.js";
-import { webhook, verifyCalendar } from "./stripe-fulfillment.js";
+import {
+  webhook,
+  verifyCalendar,
+  retryPendingPayments,
+} from "./stripe-fulfillment.js";
 import { accessHash, accessExpires } from "./test-access.js";
 export async function tokenValid(token) {
   if (Date.now() > accessExpires) return false;
@@ -38,11 +42,33 @@ const html = (body) =>
     },
   });
 export default {
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(retryPendingPayments(env));
+  },
   async fetch(request, env, ctx) {
     const url = new URL(request.url),
       path = url.pathname;
     if (path === "/api/stripe/webhook" && request.method === "POST")
       return webhook(request, env);
+    // Opt-in public-form sandbox routing. Disabled by default until the matching
+    // frontend has been published. This flag cannot enable live payments.
+    if (
+      env.STRIPE_PUBLIC_FORM_TESTING === "true" &&
+      request.method === "POST" &&
+      ["/api/consultation", "/api/shoot-request"].includes(path) &&
+      (await authorized(request))
+    ) {
+      const body = await request.json();
+      body.kind = path === "/api/consultation" ? "consultation" : "shoot";
+      return checkout(
+        new Request(request.url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }),
+        env,
+      );
+    }
     if (!path.startsWith("/api/stripe/test-"))
       return legacy.fetch(request, env, ctx);
     if (path === "/api/stripe/test-login" && request.method === "POST") {
@@ -57,7 +83,7 @@ export default {
           "Set-Cookie":
             "mm_stripe_test=" +
             token +
-            "; HttpOnly; Secure; SameSite=Lax; Path=/api/stripe; Max-Age=86400",
+            "; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=86400",
           "Cache-Control": "no-store",
         },
       });
@@ -66,6 +92,8 @@ export default {
       return path === "/api/stripe/test-booking"
         ? html(login)
         : reply({ error: "Protected sandbox. Test access required." }, 401);
+    if (path === "/api/stripe/test-retry" && request.method === "POST")
+      return reply({ results: await retryPendingPayments(env) });
     if (path === "/api/stripe/test-booking") return html(page);
     if (path === "/api/stripe/test-checkout" && request.method === "POST")
       return checkout(request, env);

@@ -55,9 +55,9 @@ The old baseline-dependent `pnpm test` suite was not used as evidence; its worke
 
 User requested confirmation of the tax breakdown before launch. The verified Stripe sandbox's Tax settings are `pending`, with no default tax code/behavior and no active registrations. Automatic tax remains off. Neither tax registrations nor legal classifications were invented.
 
-The requested total matches a possible calculation: $99.00 × 4.712% = $4.66488, rounded to $4.66; total $103.66. This is a mathematical match, not confirmation of the intended base price or the merchant's tax obligations.
+The requested total matches a possible calculation: $99.00 × 4.712% = $4.66488, rounded to $4.66; total $103.66. On September 20 the user confirmed the $99 base price and that Makani Media is registered for Hawaii GET. Service classification and Stripe Tax configuration still need confirmation.
 
-Hawaii publishes Maui's maximum GET pass-on rate as 4.7120%. Stripe Tax supports Hawaii GET using the maximum pass-on rate. Before enabling it, confirm the $99 base price, the applicable service classification/performance location, the business's GET registration, and Stripe Tax settings/registrations in the intended environment. Do not add tax on top of $103.66 by default.
+Hawaii publishes Maui's maximum GET pass-on rate as 4.7120%. Stripe Tax supports Hawaii GET using the maximum pass-on rate. Before enabling it, confirm the applicable service classification/performance location and complete Stripe Tax settings/registrations in the intended environment. Do not add tax on top of $103.66 by default.
 
 Sources:
 
@@ -66,3 +66,7 @@ Sources:
 - https://docs.stripe.com/tax/set-up
 
 Before launch: resolve tax setup, adapt and test the public forms/customer emails, add durable fulfillment recovery beyond Stripe's retry window, unify reservation checks across test/legacy/new routes, remove the temporary sandbox access surface, clean up test reservations, and configure separately authorized live credentials and a live webhook. Live charges remain deliberately disabled.
+
+## September 20 continuation (draft changes only)
+
+Added authenticated Stripe-event recovery for incomplete fulfillment, with a test proving receipt retry does not duplicate the booking, Calendar entry, or confirmation. The scheduled handler still needs a Cloudflare schedule before automatic recovery is operational. Public form scripts can now follow a server-returned Stripe Checkout URL; routing remains gated behind a disabled test flag and protected access. These continuation changes are not deployed or a live launch.
