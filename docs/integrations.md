@@ -23,3 +23,11 @@ Migration `0002_consultation_booking.sql` contains Stripe and Google Calendar id
 Root `wrangler.toml` and `worker/wrangler.toml` support the existing root-directory and worker-directory deployment commands. They point to the same Worker and D1 database; their paths, identifiers, bindings, and compatibility date are unchanged. The production Pages workflow is also unchanged.
 
 The Worker remains intentionally small; its cleanup is formatting only. Known pre-existing limitations are outside this preservation-only refactor: contact and project writes are separate, JSON `null` does not receive a structured validation error, and the checked-in Worker does not provide calendar availability. Functional changes to these behaviors require their own review.
+
+## Gemini lead engine v2
+
+Gemini is an internal analysis provider behind the Cloudflare Worker. The internal endpoint `POST /api/internal/lead-engine/analyze` requires `X-Admin-Key`, accepts only the enumerated task schemas, validates structured JSON, and records every run in D1. The public website cannot call it directly.
+
+Checked-in configuration is staging-only: live prospect outreach is false, Stripe mode is test, and the only allowed test recipient is `makanimediamaui@gmail.com`. The Worker does not implement prospect sending, phone automation, automated voicemail, or production Stripe actions. Production requests remain blocked unless environment, outreach, Stripe mode, and explicit launch approval flags all agree.
+
+Set `GEMINI_API_KEY` and `ADMIN_API_KEY` only as encrypted Worker secrets. Apply migration `0004_lead_engine_ai.sql` before testing the internal endpoint. Do not commit either secret.
