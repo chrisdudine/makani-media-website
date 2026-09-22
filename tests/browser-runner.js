@@ -249,6 +249,8 @@ async function run(side, file, width) {
           doc.querySelector('[name="preferredDate"]').value = "2026-10-12";
           doc.querySelector('[name="preferredTime"]').value = "10:00";
           doc.querySelector('[name="preferredEndTime"]').value = "13:00";
+        } else {
+          click('label[for="meeting-zoom"]');
         }
       };
       const form = doc.querySelector("form");

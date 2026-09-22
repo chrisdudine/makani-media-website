@@ -44,6 +44,15 @@ export async function createBookingCalendarEvent(
     `Phone: ${clean(body.phone) || "Not provided"}`,
     `Business: ${clean(body.business) || "Not provided"}`,
     `Project type: ${clean(body.projectType) || "Not provided"}`,
+    isConsultation
+      ? `Meeting type: ${clean(body.meetingType) === "in-person" ? "In person" : "Zoom"}`
+      : "",
+    isConsultation && clean(body.meetingType) === "in-person"
+      ? `Meeting address: ${clean(body.meetingLocation)}`
+      : "",
+    isConsultation && clean(body.meetingType) === "zoom"
+      ? "Zoom link: Include in the customer confirmation email"
+      : "",
     !isConsultation && clean(body.package)
       ? `Package: ${clean(body.package)}`
       : "",
@@ -55,7 +64,10 @@ export async function createBookingCalendarEvent(
   const event = {
     summary,
     description,
-    location: clean(body.meetingLocation) || clean(body.location),
+    location:
+      isConsultation && clean(body.meetingType) === "zoom"
+        ? "Zoom"
+        : clean(body.meetingLocation) || clean(body.location),
     start: { dateTime: start.toISOString(), timeZone: "Pacific/Honolulu" },
     end: { dateTime: end.toISOString(), timeZone: "Pacific/Honolulu" },
   };

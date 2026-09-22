@@ -5,9 +5,15 @@
     "format": "prettier --write \"*.html\" \"assets/**/*.{css,js}\" \"worker/src/**/*.js\" \"tests/*.{js,mjs}\" \"*.md\" \"docs/*.md\" \"*.json\"",
     "format:check": "prettier --check \"*.html\" \"assets/**/*.{css,js}\" \"worker/src/**/*.js\" \"tests/*.{js,mjs}\" \"*.md\" \"docs/*.md\" \"*.json\"",
     "test": "node --test tests/source.test.mjs tests/worker.test.mjs tests/booking-email.test.mjs tests/estimate.test.mjs",
-    "test:browser": "node tests/serve.mjs"
+    "test:browser": "node tests/serve.mjs",
+    "test:stripe": "node --test tests/stripe.test.mjs tests/estimate.test.mjs tests/booking-email.test.mjs",
+    "build:stripe": "esbuild worker/src/stripe-test.js --bundle --minify --format=esm --platform=browser --outfile=.wrangler/stripe-worker.js"
   },
   "devDependencies": {
     "prettier": "3.9.6"
+  },
+  "dependencies": {
+    "esbuild": "^0.28.2",
+    "stripe": "22.4.0"
   }
 }
