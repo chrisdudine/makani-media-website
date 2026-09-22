@@ -47,11 +47,13 @@ Configure the production site so `/api/consultation` is handled by this Worker. 
 
 The Worker stores both structured fields and the original submission JSON. AI output is intentionally stored separately so it never replaces the client's source data.
 
-## Next phase
+## Gemini lead engine staging
 
-After D1 storage is verified, add:
+Apply `migrations/0004_lead_engine_ai.sql`, then configure encrypted secrets:
 
-1. Gemini API analysis of new projects
-2. AI output persistence to `ai_activity`
-3. Gmail draft creation for human review
-4. Optional admin lead dashboard
+```bash
+npx wrangler secret put GEMINI_API_KEY
+npx wrangler secret put ADMIN_API_KEY
+```
+
+The checked-in environment remains staging-only. Test the internal diagnostics and analysis endpoints before enabling any production workflow. Gemini can analyze and draft structured output, but the Worker does not send prospect email, place calls, create voicemail drops, or perform production Stripe operations.
