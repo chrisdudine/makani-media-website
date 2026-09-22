@@ -89,3 +89,36 @@ test("sends customer confirmation and complete business notification", async () 
     );
   }
 });
+
+test("includes consultation format and address in customer and business emails", async () => {
+  const messages = [];
+  const env = {
+    BOOKING_EMAIL_FROM: "bookings@mail.makani-media.com",
+    BOOKING_NOTIFICATION_EMAIL: "makanimediamaui@gmail.com",
+    EMAIL: {
+      async send(message) {
+        messages.push(message);
+        return { messageId: `consultation-${messages.length}` };
+      },
+    },
+  };
+
+  await deliverBookingEmails(env, {
+    kind: "consultation",
+    projectId: "consultation-123",
+    body: {
+      name: "Test Client",
+      email: "test@example.com",
+      preferredDate: "2026-10-12",
+      preferredTime: "10:00",
+      meetingType: "in-person",
+      meetingLocation: "123 Aloha Street, Kahului, HI 96732",
+      description: "Discuss a commercial media project.",
+    },
+  });
+
+  assert.match(messages[0].text, /Meeting type: In person/);
+  assert.match(messages[0].text, /123 Aloha Street/);
+  assert.match(messages[1].text, /Meeting type: In person/);
+  assert.match(messages[1].text, /Meeting address: 123 Aloha Street/);
+});

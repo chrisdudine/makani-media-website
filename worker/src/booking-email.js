@@ -67,12 +67,27 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
   const label = isConsultation ? "consultation" : "shoot request";
   const title = isConsultation ? "Consultation Booking" : "Shoot Request";
   const estimate = isConsultation ? null : buildShootEstimate(body);
+  const meetingType = clean(body.meetingType);
+  const meetingTypeLabel =
+    meetingType === "in-person"
+      ? "In person"
+      : meetingType === "zoom"
+        ? "Zoom"
+        : "Not provided";
+  const meetingAddress = clean(body.meetingLocation);
+  const meetingText =
+    meetingType === "in-person"
+      ? `Meeting type: In person\nMeeting address: ${meetingAddress}`
+      : meetingType === "zoom"
+        ? "Meeting type: Zoom\nYour Zoom link will be included in your confirmation email."
+        : "Meeting type: Not provided";
 
   const customerText = isConsultation
     ? [
         `Hi ${customerName},`,
         "",
         `We received your Makani Media ${label} for ${bookingDateTime}.`,
+        meetingText,
         "Your requested time has been reserved while we process the booking.",
         "",
         "Thank you,",
@@ -101,7 +116,7 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
       ].join("\n");
 
   const customerHtml = isConsultation
-    ? `<p>Hi ${escapeHtml(customerName)},</p><p>We received your Makani Media ${escapeHtml(label)} for <strong>${escapeHtml(bookingDateTime)}</strong>.</p><p>Your requested time has been reserved while we process the booking.</p><p>Thank you,<br>Makani Media</p>`
+    ? `<p>Hi ${escapeHtml(customerName)},</p><p>We received your Makani Media ${escapeHtml(label)} for <strong>${escapeHtml(bookingDateTime)}</strong>.</p><p><strong>Meeting type:</strong> ${escapeHtml(meetingTypeLabel)}${meetingType === "in-person" ? `<br><strong>Meeting address:</strong> ${escapeHtml(meetingAddress)}` : ""}</p>${meetingType === "zoom" ? "<p>Your Zoom link will be included in your confirmation email.</p>" : ""}<p>Your requested time has been reserved while we process the booking.</p><p>Thank you,<br>Makani Media</p>`
     : `<p>Hi ${escapeHtml(customerName)},</p><p>Thank you for choosing Makani Media and for taking the time to tell us about your project. We truly appreciate the opportunity to work with you and help bring your vision to life.</p><p>We’ve received your shoot request for <strong>${escapeHtml(bookingDateTime)}</strong>. We’ll review your project details, location, requested services, and scheduling requirements, then follow up to confirm the final scope and availability.</p><p><strong>Your preliminary estimate is ${escapeHtml(formatEstimateTotal(estimate))}.</strong></p><p>A detailed estimate is attached for your review. Please note that this is a preliminary estimate; final pricing may be adjusted after we review the location, airspace, permits, travel requirements, operating conditions, scheduling, and any custom services.</p><p>Thank you again for considering Makani Media. We’re grateful for the opportunity to support your project and look forward to creating something exceptional with you.</p><p>Warmly,</p><p><strong>Makani Media</strong><br>Drone + Visual Media<br>Maui, Hawaiʻi<br><a href="mailto:makanimediamaui@gmail.com">makanimediamaui@gmail.com</a><br><a href="https://makani-media.com">makani-media.com</a></p>`;
 
   const businessText = [
@@ -109,7 +124,16 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
     "",
     "APPOINTMENT",
     `Requested time: ${bookingDateTime}`,
-    `Meeting / location: ${clean(body.meetingMethod) || clean(body.location) || clean(body.meetingLocation) || "Not provided"}`,
+    `Meeting type: ${meetingTypeLabel}`,
+    ...(isConsultation && meetingType === "in-person"
+      ? [`Meeting address: ${meetingAddress || "Not provided"}`]
+      : []),
+    ...(isConsultation && meetingType === "zoom"
+      ? ["Zoom link: Include in the customer confirmation email"]
+      : []),
+    ...(!isConsultation
+      ? [`Meeting / location: ${clean(body.location) || "Not provided"}`]
+      : []),
     "",
     "CUSTOMER",
     `Name: ${customerName}`,

@@ -151,6 +151,64 @@
               name="preferredTime"
               required
             />
+            <div class="meeting-method" id="meeting-method">
+              <div class="meeting-method-head">
+                <h3>How would you like to meet? <span class="req">*</span></h3>
+                <div class="hint">Choose after selecting your time</div>
+              </div>
+              <div
+                class="meeting-options"
+                role="radiogroup"
+                aria-label="Consultation meeting type"
+              >
+                <div class="meeting-option">
+                  <input
+                    required
+                    id="meeting-in-person"
+                    name="meetingType"
+                    value="in-person"
+                    type="radio"
+                  />
+                  <label for="meeting-in-person"
+                    ><span class="radio-dot"></span
+                    ><span
+                      ><strong>In person</strong
+                      ><small>Meet at your preferred Maui address</small></span
+                    ></label
+                  >
+                </div>
+                <div class="meeting-option">
+                  <input
+                    required
+                    id="meeting-zoom"
+                    name="meetingType"
+                    value="zoom"
+                    type="radio"
+                  />
+                  <label for="meeting-zoom"
+                    ><span class="radio-dot"></span
+                    ><span
+                      ><strong>Zoom</strong
+                      ><small>Meet online by video</small></span
+                    ></label
+                  >
+                </div>
+              </div>
+              <div class="field meeting-detail" id="in-person-address" hidden>
+                <label for="meetingLocation"
+                  >Meeting address <span class="req">*</span></label
+                >
+                <input
+                  id="meetingLocation"
+                  name="meetingLocation"
+                  autocomplete="street-address"
+                  placeholder="Street address, city, and ZIP code"
+                />
+              </div>
+              <div class="meeting-note" id="zoom-note" hidden>
+                Your Zoom link will be included in your confirmation email.
+              </div>
+            </div>
           </div>
 
           <div class="section">
@@ -456,6 +514,6 @@
     >
     <script src="assets/js/mobile-menu.js" data-breakpoint="720"></script>
     <script src="assets/js/booking-calendar.js?v=20260917"></script>
-    <script src="assets/js/schedule-consultation.js?v=20260916"></script>
+    <script src="assets/js/schedule-consultation.js?v=20260922"></script>
   </body>
 </html>

@@ -310,6 +310,20 @@ export default {
           { error: "Please select a valid consultation date and time." },
           400,
         );
+      const meetingType = text(body.meetingType);
+      const meetingLocation = text(body.meetingLocation);
+      if (!new Set(["in-person", "zoom"]).has(meetingType))
+        return json(
+          { error: "Please choose an in-person or Zoom consultation." },
+          400,
+        );
+      if (meetingType === "in-person" && !meetingLocation)
+        return json(
+          {
+            error: "Please enter the address for your in-person consultation.",
+          },
+          400,
+        );
 
       try {
         const slots = await getAvailability(env, preferredDate);
@@ -351,8 +365,8 @@ export default {
             start.toISOString(),
             end.toISOString(),
             bufferEnd.toISOString(),
-            text(body.meetingType) || "phone",
-            text(body.meetingLocation) || text(body.location),
+            meetingType,
+            meetingType === "in-person" ? meetingLocation : "Zoom",
             now,
             now,
           )

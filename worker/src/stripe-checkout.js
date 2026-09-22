@@ -62,6 +62,18 @@ export function validate(body) {
     body.description.length > 5000
   )
     throw Error("Project description required");
+  if (body.kind === "consultation") {
+    if (!new Set(["in-person", "zoom"]).has(body.meetingType))
+      throw Error("Select an in-person or Zoom consultation");
+    const meetingLocation =
+      typeof body.meetingLocation === "string"
+        ? body.meetingLocation.trim()
+        : "";
+    if (body.meetingType === "in-person" && !meetingLocation)
+      throw Error("Meeting address required");
+    if (meetingLocation.length > 500)
+      throw Error("Meeting address is too long");
+  }
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(body.preferredDate) ||
     !/^(0[8-9]|1[0-6]):00$/.test(body.preferredTime)

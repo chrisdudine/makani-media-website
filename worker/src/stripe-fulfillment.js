@@ -47,7 +47,7 @@ async function fulfill(env, order, session, event) {
     ops.push(
       db
         .prepare(
-          `INSERT OR IGNORE INTO consultations(id,contact_id,project_id,start_time,end_time,buffer_end_time,timezone,meeting_type,status,price_cents,payment_required,stripe_checkout_session_id,stripe_payment_intent_id,created_at,updated_at) VALUES(?,?,?,?,?,?,'Pacific/Honolulu','test','paid',?,1,?,?,?,?)`,
+          `INSERT OR IGNORE INTO consultations(id,contact_id,project_id,start_time,end_time,buffer_end_time,timezone,meeting_type,meeting_location,status,price_cents,payment_required,stripe_checkout_session_id,stripe_payment_intent_id,created_at,updated_at) VALUES(?,?,?,?,?,?,'Pacific/Honolulu',?,?,'paid',?,1,?,?,?,?)`,
         )
         .bind(
           order.id,
@@ -56,6 +56,8 @@ async function fulfill(env, order, session, event) {
           order.start_time,
           order.end_time,
           order.block_end,
+          body.meetingType,
+          body.meetingType === "in-person" ? body.meetingLocation : "Zoom",
           order.amount,
           session.id,
           session.payment_intent,
@@ -102,7 +104,9 @@ async function fulfill(env, order, session, event) {
       body: JSON.stringify({
         id: eventId,
         summary: `[STRIPE TEST — NO REAL APPOINTMENT] ${order.kind}`,
-        description: `Sandbox booking ${order.id}. No real payment.`,
+        description: `Sandbox booking ${order.id}. No real payment.\nMeeting type: ${body.meetingType === "in-person" ? "In person" : "Zoom"}${body.meetingType === "in-person" ? `\nMeeting address: ${body.meetingLocation}` : "\nZoom link will be included in the confirmation email."}`,
+        location:
+          body.meetingType === "in-person" ? body.meetingLocation : "Zoom",
         start: { dateTime: order.start_time, timeZone: "Pacific/Honolulu" },
         end: { dateTime: order.end_time, timeZone: "Pacific/Honolulu" },
         extendedProperties: { private: { makaniTestOrder: order.id } },
@@ -138,7 +142,7 @@ async function fulfill(env, order, session, event) {
     }).format(new Date(order.start_time));
     const text =
       kind === "confirmation"
-        ? `TEST ONLY — Your Makani Media ${order.kind} sandbox booking is confirmed.\nBooking: ${order.id}\nStart: ${when} HST\nNo real appointment or charge.`
+        ? `TEST ONLY — Your Makani Media ${order.kind} sandbox booking is confirmed.\nBooking: ${order.id}\nStart: ${when} HST\nMeeting type: ${body.meetingType === "in-person" ? "In person" : "Zoom"}${body.meetingType === "in-person" ? `\nMeeting address: ${body.meetingLocation}` : "\nYour Zoom link will be included in the confirmation email."}\nNo real appointment or charge.`
         : `TEST ONLY — PAID RECEIPT\nMakani Media ${order.kind}\nSimulated payment: $${(order.amount / 100).toFixed(2)} USD\nCheckout: ${session.id}\nPayment: ${session.payment_intent}\nInvoice: ${session.invoice || "pending"}\nBooking: ${order.id}\nNo money was charged. Tax treatment remains under review.`;
     const result = await env.EMAIL.send({
       from: env.BOOKING_EMAIL_FROM,

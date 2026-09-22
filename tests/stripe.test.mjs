@@ -15,6 +15,7 @@ const body = {
   description: "Sandbox",
   preferredDate: "2026-12-18",
   preferredTime: "08:00",
+  meetingType: "zoom",
 };
 test("fixed consultation total ignores client supplied amount", () =>
   assert.equal(priceOrder({ ...body, amount: 1 }), 10366));
@@ -53,6 +54,18 @@ test("input guards enforce valid dates and controlled test recipient", () => {
   assert.throws(() => validate({ ...body, preferredDate: "2027-02-30" }));
   assert.throws(() =>
     validate({ ...body, kind: "shoot", preferredEndTime: "07:00" }),
+  );
+  assert.throws(() => validate({ ...body, meetingType: "" }));
+  assert.throws(() =>
+    validate({ ...body, meetingType: "in-person", meetingLocation: "" }),
+  );
+  assert.equal(
+    validate({
+      ...body,
+      meetingType: "in-person",
+      meetingLocation: "123 Aloha Street, Kahului, HI 96732",
+    }).amount,
+    10366,
   );
   assert.equal(validate(body).amount, 10366);
 });
