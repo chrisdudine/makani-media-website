@@ -1,6 +1,7 @@
 import api from "./index.js";
 import { deliverBookingEmails } from "./booking-email.js";
 import { createBookingCalendarEvent } from "./booking-calendar.js";
+import { handleLeadEngineRequest } from "./gemini.js";
 
 const clean = (value) => (typeof value === "string" ? value.trim() : "");
 const hawaiiDateTime = (date, time) => new Date(`${date}T${time}:00-10:00`);
@@ -124,6 +125,8 @@ async function automateSuccessfulBooking(env, kind, body, result) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const leadEngineResponse = await handleLeadEngineRequest(request, env);
+    if (leadEngineResponse) return leadEngineResponse;
 
     if (
       request.method === "GET" &&
