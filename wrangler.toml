@@ -1,6 +1,9 @@
 name = "makani-media-api"
-main = "worker/src/booking-wrapper.js"
+main = "worker/src/social-inbox-worker.js"
 compatibility_date = "2026-09-07"
+
+[triggers]
+crons = ["*/5 * * * *"]
 
 [[d1_databases]]
 binding = "DB"
