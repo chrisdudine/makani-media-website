@@ -37,3 +37,5 @@ Production deployment remains configured from `main`; this branch is for review 
 The production social intake status and next task are in [the social automation handoff](docs/social-automation-handoff.md).
 
 Validate Worker packaging with `pnpm exec wrangler deploy --dry-run`. Apply pending migrations only after checking the remote ledger with `pnpm exec wrangler d1 migrations list makani-media --remote`. Never recreate the production database.
+
+AI analysis and review-only captions are documented in [Social AI drafts](docs/social-ai-drafts.md). Run `pnpm test:runtime` for the isolated workerd/D1 integration check; its Google calls are mocked.

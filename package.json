@@ -6,7 +6,8 @@
     "format:check": "prettier --check \"*.html\" \"assets/**/*.{css,js}\" \"worker/src/**/*.js\" \"tests/*.{js,mjs}\" \"*.md\" \"docs/*.md\" \"*.json\"",
     "test": "node --test tests/*.test.mjs",
     "test:browser": "node tests/serve.mjs",
-    "test:legacy-extraction": "node --test tests/legacy/*.mjs"
+    "test:legacy-extraction": "node --test tests/legacy/*.mjs",
+    "test:runtime": "node tests/social-ai-runtime.mjs"
   },
   "devDependencies": {
     "prettier": "3.9.6",
