@@ -2,6 +2,18 @@
 
 Verified 2026-09-27 UTC. Implementation is complete and deployed **paused**. Production generation is blocked by Google project access; a successful production AI draft has not been demonstrated.
 
+## Follow-up: 2026-09-28 UTC
+
+The single controlled recovery attempt after authorized personal-account Google Cloud terms acceptance still failed at `2026-09-28T09:50:58.485Z`, now classified as `GEMINI_PROJECT_ACCESS_DENIED`. The job ledger records **four cumulative attempts**, failed state, empty caption and zero targets. AI is paused again in Worker version `e4313281-2a73-4460-8ccd-c4f00fe29a76` (deployed 09:53:55 UTC). Booking configuration and Calendar availability checks passed during the recovery deployment. No code, migrations, credentials, or public posting behavior changed.
+
+The recovery deliberately granted one additional attempt by temporarily setting the existing capped counter to 2, then restored the cumulative count to 4 immediately after failure. The original three-failure state and timestamp remain documented below; no failed run was represented as successful.
+
+**More specific recovery instruction:** AI Studio under `makanimediamaui@gmail.com` shows project **Makani Media Booking** (`makani-media-booking`) as **Restricted**, with billing tier **Unavailable**. Its Rate Limit page says: “This Project’s API access is restricted. Please set up billing to continue.” This supersedes the earlier assumption that contacting support is necessarily the first recovery step. The visible business-project restriction is consistent with production failure; the sealed Worker secret has not been exposed or independently matched to the project.
+
+Billing onboarding is open for the business account. It requires separate acceptance of Google Cloud and applicable API terms, then billing enrollment. No payment or paid-usage commitment has been made. Obtain explicit acceptance and a spending limit before completing paid setup. The earlier terms acceptance was for `chrisdudine@gmail.com` and does not authorize a new billing agreement for the business account. Do not substitute the personal account’s default project or repeatedly retry the restricted project.
+
+After authorized billing setup, recheck project access and perform one controlled generation test using the existing deployed credentials. If Google continues to deny access, escalate with the exact denial and project restriction details. Keep AI paused until recovery is verified. A production draft and human review interface remain outstanding.
+
 ## Completed
 
 - Continued from foundation `c226bac` and Drive ingestion `e4a0a13`, preserving the completed intake work and audit branch.
