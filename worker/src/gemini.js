@@ -157,17 +157,19 @@ export async function runGeminiTask(env, task, payload, fetcher = fetch) {
   if (!clean(env.GEMINI_API_KEY)) throw new Error("Gemini API key is not configured");
   const model = leadEngineState(env).model;
   const response = await fetcher(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+      signal: AbortSignal.timeout(60_000),
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: instruction(task) }] },
         contents: [{ role: "user", parts: [{ text: JSON.stringify(payload) }] }],
         generationConfig: {
           temperature: 0.2,
           responseMimeType: "application/json",
-          responseSchema: definition.schema,
+          responseJsonSchema: definition.schema,
+          maxOutputTokens: 4096,
         },
       }),
     },
@@ -249,4 +251,5 @@ export async function handleLeadEngineRequest(request, env) {
     return json({ error: "Gemini analysis failed safely." }, 502);
   }
 }
+
 

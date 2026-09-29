@@ -63,3 +63,26 @@ test("production gate remains closed without explicit launch flags", async () =>
   assert.match(await response.text(), /launch gate is closed/i);
 });
 
+
+
+
+test("uses JSON Schema transport and bounds generation without a key in the URL", async () => {
+  await runGeminiTask({GEMINI_API_KEY:"test-secret"}, "outreach_draft", {}, async (url, init) => {
+    assert.equal(new URL(url).search, "");
+    assert.equal(init.headers["x-goog-api-key"], "test-secret");
+    const config=JSON.parse(init.body).generationConfig;
+    assert.equal(config.responseSchema, undefined);
+    assert.equal(config.responseJsonSchema.additionalProperties, false);
+    assert.equal(config.maxOutputTokens,4096);
+    assert.ok(init.signal instanceof AbortSignal);
+    return geminiFetch();
+  });
+});
+
+test("rejects provider errors without retrying or exposing credentials", async () => {
+  let calls=0;
+  await assert.rejects(runGeminiTask({GEMINI_API_KEY:"test-secret"},"outreach_draft",{},async()=>{
+    calls++;return new Response("sensitive provider detail",{status:400});
+  }), {message:"Gemini request failed (400)"});
+  assert.equal(calls,1);
+});
