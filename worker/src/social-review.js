@@ -64,7 +64,9 @@ export async function reviewRequest(request, env) {
         rows.results.slice(0, limit).map(async (row) => {
           let metadata = {};
           try {
-            metadata = JSON.parse(row.ai_metadata_json);
+            const parsed = JSON.parse(row.ai_metadata_json);
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed))
+              metadata = parsed;
           } catch {}
           const targets = await env.DB.prepare(
             "SELECT id,platform,platform_caption,publish_status,updated_at FROM social_content_targets WHERE content_id=? ORDER BY platform",

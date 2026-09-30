@@ -77,6 +77,16 @@ try {
   assert.equal(list.items.length, 1);
   assert.equal(list.items[0].targets.length, 3);
   assert.equal(list.publishing_enabled, false);
+  for (const metadata of ["null", "[]", '"text"', "{broken"]) {
+    await DB.prepare(
+      "UPDATE social_content SET ai_metadata_json=? WHERE id='one'",
+    )
+      .bind(metadata)
+      .run();
+    const response = await request("/items", { headers: auth });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).items[0].summary, "");
+  }
   const patch = (body) =>
     request("/target", {
       method: "PATCH",
