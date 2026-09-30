@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { handleLeadEngineRequest, leadEngineState, runGeminiTask } from "../worker/src/gemini.js";
+import {
+  handleLeadEngineRequest,
+  leadEngineState,
+  runGeminiTask,
+} from "../worker/src/gemini.js";
 
 const output = {
   subject: "Aerial progress documentation for your Maui projects",
@@ -11,10 +15,20 @@ const output = {
 };
 
 const geminiFetch = async () =>
-  new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(output) }] } }] }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  new Response(
+    JSON.stringify({
+      candidates: [
+        {
+          finishReason: "STOP",
+          content: { parts: [{ text: JSON.stringify(output) }] },
+        },
+      ],
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
 
 test("defaults to a staging-safe state", () => {
   assert.deepEqual(leadEngineState({}), {
@@ -49,7 +63,11 @@ test("production gate remains closed without explicit launch flags", async () =>
     new Request("https://example.test/api/internal/lead-engine/analyze", {
       method: "POST",
       headers: { "X-Admin-Key": "secret", "Content-Type": "application/json" },
-      body: JSON.stringify({ task: "outreach_draft", entityId: "TEST-1", payload: {} }),
+      body: JSON.stringify({
+        task: "outreach_draft",
+        entityId: "TEST-1",
+        payload: {},
+      }),
     }),
     {
       ADMIN_API_KEY: "secret",
@@ -63,26 +81,213 @@ test("production gate remains closed without explicit launch flags", async () =>
   assert.match(await response.text(), /launch gate is closed/i);
 });
 
-
-
-
 test("uses JSON Schema transport and bounds generation without a key in the URL", async () => {
-  await runGeminiTask({GEMINI_API_KEY:"test-secret"}, "outreach_draft", {}, async (url, init) => {
-    assert.equal(new URL(url).search, "");
-    assert.equal(init.headers["x-goog-api-key"], "test-secret");
-    const config=JSON.parse(init.body).generationConfig;
-    assert.equal(config.responseSchema, undefined);
-    assert.equal(config.responseJsonSchema.additionalProperties, false);
-    assert.equal(config.maxOutputTokens,4096);
-    assert.ok(init.signal instanceof AbortSignal);
-    return geminiFetch();
-  });
+  await runGeminiTask(
+    { GEMINI_API_KEY: "test-secret" },
+    "outreach_draft",
+    {},
+    async (url, init) => {
+      assert.equal(new URL(url).search, "");
+      assert.equal(init.headers["x-goog-api-key"], "test-secret");
+      const config = JSON.parse(init.body).generationConfig;
+      assert.equal(config.responseSchema, undefined);
+      assert.equal(config.responseJsonSchema.additionalProperties, false);
+      assert.equal(config.maxOutputTokens, 4096);
+      assert.ok(init.signal instanceof AbortSignal);
+      return geminiFetch();
+    },
+  );
 });
 
 test("rejects provider errors without retrying or exposing credentials", async () => {
-  let calls=0;
-  await assert.rejects(runGeminiTask({GEMINI_API_KEY:"test-secret"},"outreach_draft",{},async()=>{
-    calls++;return new Response("sensitive provider detail",{status:400});
-  }), {message:"Gemini request failed (400)"});
-  assert.equal(calls,1);
+  let calls = 0;
+  await assert.rejects(
+    runGeminiTask(
+      { GEMINI_API_KEY: "test-secret" },
+      "outreach_draft",
+      {},
+      async () => {
+        calls++;
+        return new Response("sensitive provider detail", { status: 400 });
+      },
+    ),
+    { message: "Gemini request failed (400)" },
+  );
+  assert.equal(calls, 1);
+});
+
+test("malformed request shapes return 400 before provider or audit work", async () => {
+  for (const body of [
+    "null",
+    "[]",
+    JSON.stringify({ task: "project_analysis", entityId: "x", payload: [] }),
+  ]) {
+    const response = await handleLeadEngineRequest(
+      new Request("https://test/api/internal/lead-engine/analyze", {
+        method: "POST",
+        headers: { "X-Admin-Key": "test", "Content-Type": "application/json" },
+        body,
+      }),
+      {
+        ADMIN_API_KEY: "test",
+        LEAD_ENGINE_TEST_RECIPIENT: "makanimediamaui@gmail.com",
+        DB: {
+          prepare() {
+            return { first: async () => ({}) };
+          },
+        },
+      },
+    );
+    assert.equal(response.status, 400);
+  }
+});
+test("rejects invalid types, extra keys and incomplete provider results", async () => {
+  for (const candidate of [
+    { ...output, sequenceStep: "zero" },
+    { ...output, toneCheck: "invalid" },
+    { ...output, extra: true },
+  ]) {
+    await assert.rejects(
+      runGeminiTask(
+        { GEMINI_API_KEY: "test" },
+        "outreach_draft",
+        {},
+        async () =>
+          Response.json({
+            candidates: [
+              {
+                finishReason: "STOP",
+                content: { parts: [{ text: JSON.stringify(candidate) }] },
+              },
+            ],
+          }),
+      ),
+    );
+  }
+  await assert.rejects(
+    runGeminiTask({ GEMINI_API_KEY: "test" }, "outreach_draft", {}, async () =>
+      Response.json({
+        candidates: [
+          {
+            finishReason: "MAX_TOKENS",
+            content: { parts: [{ text: JSON.stringify(output) }] },
+          },
+        ],
+      }),
+    ),
+  );
+});
+
+test("audit preflight blocks provider calls and storage failures are contained", async () => {
+  let calls = 0;
+  const request = () =>
+    new Request("https://test/api/internal/lead-engine/analyze", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test", "Content-Type": "application/json" },
+      body: JSON.stringify({
+        task: "outreach_draft",
+        entityId: "test",
+        payload: {},
+      }),
+    });
+  const base = {
+    ADMIN_API_KEY: "test",
+    GEMINI_API_KEY: "fake",
+    LEAD_ENGINE_TEST_RECIPIENT: "makanimediamaui@gmail.com",
+  };
+  const provider = {
+    fetcher: async () => {
+      calls++;
+      return geminiFetch();
+    },
+  };
+  assert.equal(
+    (await handleLeadEngineRequest(request(), base, provider)).status,
+    503,
+  );
+  assert.equal(calls, 0);
+  const db = {
+    prepare() {
+      return {
+        first: async () => ({}),
+        bind() {
+          return this;
+        },
+        run: async () => {
+          throw Error("private database detail");
+        },
+      };
+    },
+  };
+  const response = await handleLeadEngineRequest(
+    request(),
+    { ...base, DB: db },
+    provider,
+  );
+  assert.equal(response.status, 503);
+  assert.equal(calls, 1);
+  assert.equal((await response.json()).error, "Audit storage unavailable.");
+});
+test("network error details are not persisted in the failure audit", async () => {
+  let values;
+  const DB = {
+    prepare() {
+      return {
+        first: async () => ({}),
+        bind(...args) {
+          values = args;
+          return this;
+        },
+        run: async () => ({}),
+      };
+    },
+  };
+  const response = await handleLeadEngineRequest(
+    new Request("https://test/api/internal/lead-engine/analyze", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test", "Content-Type": "application/json" },
+      body: JSON.stringify({
+        task: "outreach_draft",
+        entityId: "test",
+        payload: {},
+      }),
+    }),
+    {
+      ADMIN_API_KEY: "test",
+      GEMINI_API_KEY: "fake",
+      LEAD_ENGINE_TEST_RECIPIENT: "makanimediamaui@gmail.com",
+      DB,
+    },
+    {
+      fetcher: async () => {
+        throw Error("secret-provider-detail");
+      },
+    },
+  );
+  assert.equal(response.status, 502);
+  assert.ok(!JSON.stringify(values).includes("secret-provider-detail"));
+  assert.ok(values.includes("Gemini provider request failed"));
+});
+test("response and request bodies are bounded", async () => {
+  await assert.rejects(
+    runGeminiTask(
+      { GEMINI_API_KEY: "test" },
+      "outreach_draft",
+      {},
+      async () => new Response("x".repeat(300000)),
+    ),
+    /limit/,
+  );
+  const r = await handleLeadEngineRequest(
+    new Request("https://test/api/internal/lead-engine/analyze", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test", "Content-Type": "application/json" },
+      body: "x".repeat(17000),
+    }),
+    {
+      ADMIN_API_KEY: "test",
+      LEAD_ENGINE_TEST_RECIPIENT: "makanimediamaui@gmail.com",
+    },
+  );
+  assert.equal(r.status, 400);
 });

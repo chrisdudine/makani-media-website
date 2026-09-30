@@ -52,7 +52,13 @@ const TASKS = {
         sequenceStep: { type: "integer", minimum: 0, maximum: 3 },
         toneCheck: { type: "string", enum: ["pass", "revise"] },
       },
-      required: ["subject", "body", "messageAngle", "sequenceStep", "toneCheck"],
+      required: [
+        "subject",
+        "body",
+        "messageAngle",
+        "sequenceStep",
+        "toneCheck",
+      ],
     },
   },
   reply_classification: {
@@ -69,11 +75,27 @@ const TASKS = {
       properties: {
         classification: {
           type: "string",
-          enum: ["positive", "neutral", "negative", "unsubscribe", "bounce", "automated", "unknown"],
+          enum: [
+            "positive",
+            "neutral",
+            "negative",
+            "unsubscribe",
+            "bounce",
+            "automated",
+            "unknown",
+          ],
         },
         intent: {
           type: "string",
-          enum: ["interested", "book", "question", "later", "not_interested", "unsubscribe", "unknown"],
+          enum: [
+            "interested",
+            "book",
+            "question",
+            "later",
+            "not_interested",
+            "unsubscribe",
+            "unknown",
+          ],
         },
         requiresHuman: { type: "boolean" },
         stopSequence: { type: "boolean" },
@@ -113,9 +135,18 @@ export const leadEngineState = (env) => ({
   model: clean(env.GEMINI_MODEL) || "gemini-2.5-flash",
 });
 
-const authorized = (request, env) => {
+const authorized = async (request, env) => {
   const expected = clean(env.ADMIN_API_KEY);
-  return Boolean(expected && clean(request.headers.get("X-Admin-Key")) === expected);
+  const supplied = clean(request.headers.get("X-Admin-Key"));
+  if (!expected || !supplied || supplied.length > 4096) return false;
+  const digest = (value) =>
+    crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  const [a, b] = await Promise.all([digest(expected), digest(supplied)]);
+  const left = new Uint8Array(a),
+    right = new Uint8Array(b);
+  let difference = 0;
+  for (let i = 0; i < left.length; i++) difference |= left[i] ^ right[i];
+  return difference === 0;
 };
 
 const launchGateClosed = (env) => {
@@ -140,31 +171,98 @@ function instruction(task) {
   return shared;
 }
 
+class GeminiError extends Error {}
+async function limitedJson(response, limit) {
+  if (Number(response.headers.get("Content-Length")) > limit) {
+    await response.body?.cancel();
+    throw new GeminiError("JSON body exceeds limit");
+  }
+  if (!response.body) throw new GeminiError("Missing JSON body");
+  const reader = response.body.getReader();
+  const chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > limit) {
+        await reader.cancel();
+        throw new GeminiError("JSON body exceeds limit");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.length;
+  }
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    throw new GeminiError("Invalid JSON body");
+  }
+}
 function validateResult(task, value) {
   const definition = TASKS[task];
   if (!value || typeof value !== "object" || Array.isArray(value))
-    throw new Error("Gemini returned a non-object response");
-  for (const key of definition.required)
-    if (!(key in value)) throw new Error(`Gemini response missing ${key}`);
+    throw new GeminiError("Invalid Gemini output");
+  if (
+    Object.keys(value).some(
+      (key) => !Object.hasOwn(definition.schema.properties, key),
+    )
+  )
+    throw new GeminiError("Invalid Gemini output");
+  for (const key of definition.required) {
+    const field = definition.schema.properties[key],
+      v = value[key];
+    if (
+      (field.type === "integer"
+        ? !Number.isInteger(v)
+        : typeof v !== field.type) ||
+      (typeof v === "number" &&
+        (!Number.isFinite(v) || v < field.minimum || v > field.maximum)) ||
+      (typeof v === "string" && v.length > 6000) ||
+      (field.enum && !field.enum.includes(v))
+    )
+      throw new GeminiError("Invalid Gemini output");
+  }
   if (task === "reply_classification" && value.classification !== "automated")
     value.stopSequence = true;
+  if (
+    task === "reply_classification" &&
+    (value.classification === "unsubscribe" || value.intent === "unsubscribe")
+  ) {
+    value.stopSequence = true;
+    value.requiresHuman = true;
+  }
   return value;
 }
 
 export async function runGeminiTask(env, task, payload, fetcher = fetch) {
-  const definition = TASKS[task];
-  if (!definition) throw new Error("Unsupported Gemini task");
-  if (!clean(env.GEMINI_API_KEY)) throw new Error("Gemini API key is not configured");
+  const definition = Object.hasOwn(TASKS, task) && TASKS[task];
+  if (!definition) throw new GeminiError("Unsupported Gemini task");
+  if (!clean(env.GEMINI_API_KEY))
+    throw new GeminiError("Gemini API key is not configured");
   const model = leadEngineState(env).model;
   const response = await fetcher(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": env.GEMINI_API_KEY,
+      },
       signal: AbortSignal.timeout(60_000),
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: instruction(task) }] },
-        contents: [{ role: "user", parts: [{ text: JSON.stringify(payload) }] }],
+        contents: [
+          { role: "user", parts: [{ text: JSON.stringify(payload) }] },
+        ],
         generationConfig: {
           temperature: 0.2,
           responseMimeType: "application/json",
@@ -174,14 +272,31 @@ export async function runGeminiTask(env, task, payload, fetcher = fetch) {
       }),
     },
   );
-  if (!response.ok) throw new Error(`Gemini request failed (${response.status})`);
-  const data = await response.json();
-  const output = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!output) throw new Error("Gemini returned no structured output");
-  return validateResult(task, JSON.parse(output));
+  if (!response.ok) {
+    await response.body?.cancel();
+    throw new GeminiError(`Gemini request failed (${response.status})`);
+  }
+  const data = await limitedJson(response, 256 * 1024);
+  const candidate = data.candidates?.[0];
+  if (candidate?.finishReason !== "STOP")
+    throw new GeminiError("Incomplete Gemini output");
+  const output = candidate.content?.parts
+    ?.filter((p) => !p.thought && typeof p.text === "string")
+    .map((p) => p.text)
+    .join("");
+  let parsed;
+  try {
+    parsed = JSON.parse(output);
+  } catch {
+    throw new GeminiError("Invalid Gemini output");
+  }
+  return validateResult(task, parsed);
 }
 
-async function recordRun(env, { task, entityId, payload, result, status, error }) {
+async function recordRun(
+  env,
+  { task, entityId, payload, result, status, error },
+) {
   if (!env.DB) return;
   await env.DB.prepare(
     `INSERT INTO lead_engine_ai_runs (
@@ -205,13 +320,21 @@ async function recordRun(env, { task, entityId, payload, result, status, error }
     .run();
 }
 
-export async function handleLeadEngineRequest(request, env) {
+export async function handleLeadEngineRequest(request, env, dependencies = {}) {
   const url = new URL(request.url);
-  if (!url.pathname.startsWith("/api/internal/lead-engine")) return null;
-  if (!authorized(request, env)) return json({ error: "Unauthorized" }, 401);
+  if (
+    url.pathname !== "/api/internal/lead-engine" &&
+    !url.pathname.startsWith("/api/internal/lead-engine/")
+  )
+    return null;
+  if (!(await authorized(request, env)))
+    return json({ error: "Unauthorized" }, 401);
 
   const state = leadEngineState(env);
-  if (request.method === "GET" && url.pathname.endsWith("/diagnostics"))
+  if (
+    request.method === "GET" &&
+    url.pathname === "/api/internal/lead-engine/diagnostics"
+  )
     return json({
       ok: Boolean(env.DB && env.GEMINI_API_KEY && state.testRecipient),
       state,
@@ -223,33 +346,93 @@ export async function handleLeadEngineRequest(request, env) {
       },
     });
 
-  if (request.method !== "POST" || !url.pathname.endsWith("/analyze"))
+  if (
+    request.method !== "POST" ||
+    url.pathname !== "/api/internal/lead-engine/analyze"
+  )
     return json({ error: "Not found" }, 404);
   if (launchGateClosed(env))
     return json({ error: "Production launch gate is closed." }, 409);
-  if (state.environment !== "production" && state.testRecipient !== "makanimediamaui@gmail.com")
-    return json({ error: "Staging test recipient is not configured safely." }, 409);
+  if (
+    state.environment !== "production" &&
+    state.testRecipient !== "makanimediamaui@gmail.com"
+  )
+    return json(
+      { error: "Staging test recipient is not configured safely." },
+      409,
+    );
 
+  if (!request.headers.get("Content-Type")?.startsWith("application/json"))
+    return json({ error: "JSON required." }, 415);
   let body;
   try {
-    body = await request.json();
+    body = await limitedJson(request, 16000);
   } catch {
     return json({ error: "Invalid JSON request." }, 400);
   }
+  if (!body || typeof body !== "object" || Array.isArray(body))
+    return json({ error: "Invalid request body." }, 400);
   const task = clean(body.task);
   const entityId = clean(body.entityId);
-  if (!TASKS[task] || !entityId || !body.payload || typeof body.payload !== "object")
+  if (
+    !Object.hasOwn(TASKS, task) ||
+    !entityId ||
+    entityId.length > 200 ||
+    !body.payload ||
+    typeof body.payload !== "object" ||
+    Array.isArray(body.payload)
+  )
     return json({ error: "task, entityId, and payload are required." }, 400);
 
+  // Require a working audit table before any provider operation.
   try {
-    const result = await runGeminiTask(env, task, body.payload);
-    await recordRun(env, { task, entityId, payload: body.payload, result, status: "succeeded" });
-    return json({ success: true, testOnly: state.environment !== "production", task, entityId, result });
+    if (!env.DB) throw new Error();
+    await env.DB.prepare("SELECT id FROM lead_engine_ai_runs LIMIT 1").first();
+  } catch {
+    return json({ error: "Audit storage unavailable." }, 503);
+  }
+  let result;
+  try {
+    result = await runGeminiTask(
+      env,
+      task,
+      body.payload,
+      dependencies.fetcher || fetch,
+    );
   } catch (error) {
-    console.error("Gemini lead-engine task failed", error);
-    await recordRun(env, { task, entityId, payload: body.payload, status: "failed", error: error.message });
+    const safeError =
+      error instanceof GeminiError
+        ? error.message
+        : "Gemini provider request failed";
+    try {
+      await recordRun(env, {
+        task,
+        entityId,
+        payload: body.payload,
+        status: "failed",
+        error: safeError,
+      });
+    } catch {
+      return json({ error: "Audit storage unavailable." }, 503);
+    }
     return json({ error: "Gemini analysis failed safely." }, 502);
   }
+  try {
+    await recordRun(env, {
+      task,
+      entityId,
+      payload: body.payload,
+      result,
+      status: "succeeded",
+    });
+  } catch {
+    return json({ error: "Audit storage unavailable." }, 503);
+  }
+  return json({
+    success: true,
+    testOnly: state.environment !== "production",
+    task,
+    entityId,
+    result,
+  });
 }
-
-
