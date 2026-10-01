@@ -1,6 +1,6 @@
 export const SOCIAL_DRIVE_FOLDER_ID = "16M72Ioa-KtWd0jpbx_Gqee42NHtbqIXO";
 
-async function googleToken(env) {
+export async function googleToken(env) {
   if (
     !env.GOOGLE_CLIENT_ID ||
     !env.GOOGLE_CLIENT_SECRET ||

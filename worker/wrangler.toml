@@ -14,7 +14,22 @@ database_id = "514ec4c8-012e-40b0-b426-c3228b4f6bdf"
 name = "EMAIL"
 
 [vars]
+SOCIAL_AI_ENABLED = "false"
+SOCIAL_AI_VERIFY = "false"
+SOCIAL_AI_MODEL = "gemini-3.5-flash-lite"
 GOOGLE_CALENDAR_ID = "makanimediamaui@gmail.com"
 GOOGLE_CALENDAR_ENABLED = "true"
 BOOKING_EMAIL_FROM = "bookings@mail.makani-media.com"
 BOOKING_NOTIFICATION_EMAIL = "makanimediamaui@gmail.com"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+head_sampling_rate = 1
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 0.01

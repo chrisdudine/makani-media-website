@@ -230,6 +230,29 @@ test("scheduled execution completes ingestion and logs counts", async (t) => {
   assert.equal(JSON.parse(log.mock.calls[0].arguments[0]).inserted, 1);
 });
 
-test("all HTTP requests use the exact existing booking and Calendar handler", () => {
-  assert.equal(worker.fetch, booking.fetch);
+test("non-review requests delegate unchanged to the existing booking handler", async () => {
+  const original = booking.fetch;
+  const env = {},
+    ctx = {};
+  try {
+    booking.fetch = (request, actualEnv, actualCtx) => {
+      assert.equal(actualEnv, env);
+      assert.equal(actualCtx, ctx);
+      return new Response(request.url);
+    };
+    for (const path of [
+      "/api/availability",
+      "/api/consultations",
+      "/api/diagnostics/booking-config",
+      "/api/social-review-other",
+    ]) {
+      const request = new Request("https://local" + path);
+      assert.equal(
+        await (await worker.fetch(request, env, ctx)).text(),
+        request.url,
+      );
+    }
+  } finally {
+    booking.fetch = original;
+  }
 });

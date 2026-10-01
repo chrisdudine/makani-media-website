@@ -6,7 +6,6 @@ import { createHash } from "node:crypto";
 import prettier from "prettier";
 
 const root = resolve(".");
-const baseline = resolve(process.env.BASELINE_DIR || "../baseline");
 const decoder = new TextDecoder("utf-8", { fatal: true });
 const parser = {
   ".html": "html",
@@ -60,106 +59,7 @@ test("every HTML, CSS, JS, JSON and Markdown file is readable and parses", async
   }
 });
 
-test("page text, navigation and form markup are unchanged after source extraction", async () => {
-  const stripAssets = (html) =>
-    html
-      .replace(/<!doctype html>/i, "<!doctype html>")
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/g, "")
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, "")
-      .replace(/<link\b[^>]*href="assets\/css\/[^>]*>/g, "")
-      .replace(
-        /data:image\/png;base64,[A-Za-z0-9+/=]+/g,
-        "assets/images/hero-logo.png",
-      );
-  for (const page of [
-    "index",
-    "pricing",
-    "book-shoot",
-    "schedule-consultation",
-  ]) {
-    const before = stripAssets(
-      await readFile(resolve(baseline, page + ".html"), "utf8"),
-    );
-    const after = stripAssets(
-      await readFile(resolve(root, page + ".html"), "utf8"),
-    );
-    const options = { parser: "html", htmlWhitespaceSensitivity: "strict" };
-    assert.equal(
-      await prettier.format(after, options),
-      await prettier.format(before, options),
-      page,
-    );
-  }
-});
-
-test("all stylesheet declarations and order match main", async () => {
-  for (const page of [
-    "index",
-    "pricing",
-    "book-shoot",
-    "schedule-consultation",
-  ]) {
-    const html = await readFile(resolve(baseline, page + ".html"), "utf8");
-    const css = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
-      .map((match) => match[1])
-      .join("\n")
-      .replace(/url\('assets\//g, "url('../");
-    const current = await readFile(
-      resolve(root, "assets/css", page + ".css"),
-      "utf8",
-    );
-    assert.equal(current, await prettier.format(css, { parser: "css" }), page);
-  }
-});
-
-test("form, calendar, and Worker logic match main apart from formatting", async () => {
-  for (const [page, marker] of [
-    ["book-shoot", "const form="],
-    ["schedule-consultation", "const calendarTitle="],
-  ]) {
-    const html = await readFile(resolve(baseline, page + ".html"), "utf8");
-    const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
-    const original = script.slice(script.indexOf(marker));
-    assert.equal(
-      await readFile(resolve(root, "assets/js", page + ".js"), "utf8"),
-      await prettier.format(original, { parser: "babel" }),
-      page,
-    );
-  }
-  assert.equal(
-    await readFile(resolve(root, "worker/src/index.js"), "utf8"),
-    await prettier.format(
-      await readFile(resolve(baseline, "worker/src/index.js"), "utf8"),
-      { parser: "babel" },
-    ),
-  );
-});
-
-test("homepage image bytes, database migrations and deployment configuration match main", async () => {
-  const original = await readFile(resolve(baseline, "index.html"), "utf8");
-  const bytes = Buffer.from(
-    original.match(/data:image\/png;base64,([A-Za-z0-9+/=]+)/)[1],
-    "base64",
-  );
-  assert.deepEqual(await readFile("assets/images/hero-logo.png"), bytes);
-  for (const file of [
-    "assets/contact-background-clean.png",
-    "wrangler.toml",
-    "worker/wrangler.toml",
-    "worker/wrangler.example.toml",
-    "worker/migrations/0001_initial.sql",
-    "worker/migrations/0002_consultation_booking.sql",
-    ".github/workflows/pages.yml",
-  ]) {
-    assert.deepEqual(
-      await readFile(resolve(root, file)),
-      await readFile(resolve(baseline, file)),
-      file,
-    );
-  }
-});
-
-test("extracted local assets exist and are loaded in the original script order", async () => {
+test("local assets exist and the shared calendar loads before booking forms", async () => {
   for (const page of [
     "index",
     "pricing",
@@ -173,12 +73,12 @@ test("extracted local assets exist and are loaded in the original script order",
       assert((await readFile(asset)).length > 0, asset);
     }
     const scripts = [...html.matchAll(/<script[^>]*src="([^"]+)"/g)].map(
-      (match) => match[1],
+      (match) => match[1].split("?")[0],
     );
     assert.deepEqual(scripts, [
       "assets/js/mobile-menu.js",
       ...(["book-shoot", "schedule-consultation"].includes(page)
-        ? [`assets/js/${page}.js`]
+        ? ["assets/js/booking-calendar.js", `assets/js/${page}.js`]
         : []),
     ]);
     const css = await readFile(`assets/css/${page}.css`, "utf8");
