@@ -128,7 +128,7 @@ const TASKS = {
 };
 
 export const leadEngineState = (env) => ({
-  environment: clean(env.LEAD_ENGINE_ENVIRONMENT) || "staging",
+  environment: clean(env.LEAD_ENGINE_ENVIRONMENT) || "production",
   liveProspectOutreach: env.LIVE_PROSPECT_OUTREACH === "true",
   stripeMode: clean(env.STRIPE_MODE) || "test",
   testRecipient: clean(env.LEAD_ENGINE_TEST_RECIPIENT),
@@ -151,7 +151,8 @@ const authorized = async (request, env) => {
 
 const launchGateClosed = (env) => {
   const state = leadEngineState(env);
-  if (state.environment !== "production") return false;
+  if (state.environment === "staging") return false;
+  if (state.environment !== "production") return true;
   return !(
     env.LEAD_ENGINE_LAUNCH_APPROVED === "true" &&
     state.liveProspectOutreach &&

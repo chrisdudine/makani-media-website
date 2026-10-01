@@ -30,9 +30,9 @@ const geminiFetch = async () =>
     },
   );
 
-test("defaults to a staging-safe state", () => {
+test("defaults to a production-gated state", () => {
   assert.deepEqual(leadEngineState({}), {
-    environment: "staging",
+    environment: "production",
     liveProspectOutreach: false,
     stripeMode: "test",
     testRecipient: "",
@@ -130,6 +130,7 @@ test("malformed request shapes return 400 before provider or audit work", async 
       }),
       {
         ADMIN_API_KEY: "test",
+        LEAD_ENGINE_ENVIRONMENT: "staging",
         LEAD_ENGINE_TEST_RECIPIENT: "makanimediamaui@gmail.com",
         DB: {
           prepare() {
@@ -193,6 +194,7 @@ test("audit preflight blocks provider calls and storage failures are contained",
   const base = {
     ADMIN_API_KEY: "test",
     GEMINI_API_KEY: "fake",
+    LEAD_ENGINE_ENVIRONMENT: "staging",
     LEAD_ENGINE_TEST_RECIPIENT: "makanimediamaui@gmail.com",
   };
   const provider = {
@@ -255,6 +257,7 @@ test("network error details are not persisted in the failure audit", async () =>
     {
       ADMIN_API_KEY: "test",
       GEMINI_API_KEY: "fake",
+      LEAD_ENGINE_ENVIRONMENT: "staging",
       LEAD_ENGINE_TEST_RECIPIENT: "makanimediamaui@gmail.com",
       DB,
     },
@@ -286,8 +289,54 @@ test("response and request bodies are bounded", async () => {
     }),
     {
       ADMIN_API_KEY: "test",
+      LEAD_ENGINE_ENVIRONMENT: "staging",
       LEAD_ENGINE_TEST_RECIPIENT: "makanimediamaui@gmail.com",
     },
   );
   assert.equal(r.status, 400);
+});
+
+test("omitted and unknown environment cannot bypass the launch gate", async () => {
+  for (const environment of [undefined, "stagign", "development", ""]) {
+    let calls = 0;
+    const response = await handleLeadEngineRequest(
+      new Request("https://test/api/internal/lead-engine/analyze", {
+        method: "POST",
+        headers: { "X-Admin-Key": "test", "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: "project_analysis",
+          entityId: "gate-test",
+          payload: {},
+        }),
+      }),
+      {
+        ADMIN_API_KEY: "test",
+        LEAD_ENGINE_ENVIRONMENT: environment,
+        LEAD_ENGINE_TEST_RECIPIENT: "makanimediamaui@gmail.com",
+        LIVE_PROSPECT_OUTREACH: "false",
+        STRIPE_MODE: "test",
+      },
+      {
+        fetcher: async () => {
+          calls++;
+          throw Error("must not run");
+        },
+      },
+    );
+    assert.equal(response.status, 409);
+    assert.equal(calls, 0);
+  }
+});
+
+test("default deploy configs point to a closed production gate; isolated config uses test D1", async () => {
+  const { readFile } = await import("node:fs/promises");
+  for (const path of ["wrangler.toml", "worker/wrangler.toml"]) {
+    const text = await readFile(path, "utf8");
+    assert.match(text, /LEAD_ENGINE_ENVIRONMENT = "production"/);
+    assert.match(text, /LEAD_ENGINE_LAUNCH_APPROVED = "false"/);
+    assert.match(text, /LIVE_PROSPECT_OUTREACH = "false"/);
+  }
+  const isolated = await readFile("tests/cloud-validation.toml", "utf8");
+  assert.match(isolated, /LEAD_ENGINE_ENVIRONMENT = "staging"/);
+  assert.ok(!isolated.includes("514ec4c8-012e-40b0-b426-c3228b4f6bdf"));
 });

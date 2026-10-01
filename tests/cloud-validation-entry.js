@@ -12,6 +12,7 @@ export default {
       LIVE_PROSPECT_OUTREACH: "false",
       STRIPE_MODE: "test",
       LEAD_ENGINE_LAUNCH_APPROVED: "false",
+      ...(gate === "unknown" ? { LEAD_ENGINE_ENVIRONMENT: "unknown" } : gate === "missing" ? { LEAD_ENGINE_ENVIRONMENT: undefined } : {}),
       ...(gate === "production"
         ? { LEAD_ENGINE_ENVIRONMENT: "production" }
         : gate === "recipient"
