@@ -334,9 +334,53 @@ test("default deploy configs point to a closed production gate; isolated config 
     const text = await readFile(path, "utf8");
     assert.match(text, /LEAD_ENGINE_ENVIRONMENT = "production"/);
     assert.match(text, /LEAD_ENGINE_LAUNCH_APPROVED = "false"/);
+    assert.match(text, /LEAD_ENGINE_DRAFT_ANALYSIS_ENABLED = "false"/);
     assert.match(text, /LIVE_PROSPECT_OUTREACH = "false"/);
   }
   const isolated = await readFile("tests/cloud-validation.toml", "utf8");
   assert.match(isolated, /LEAD_ENGINE_ENVIRONMENT = "staging"/);
   assert.ok(!isolated.includes("514ec4c8-012e-40b0-b426-c3228b4f6bdf"));
+});
+
+test("draft analysis requires exact permission and an explicit known environment", async () => {
+  for (const environment of [undefined, "", "unknown", "production"]) {
+    for (const permission of [undefined, "false", "TRUE", true, "true"]) {
+      const env = {
+        ADMIN_API_KEY: "test",
+        LEAD_ENGINE_ENVIRONMENT: environment,
+        LEAD_ENGINE_DRAFT_ANALYSIS_ENABLED: permission,
+        LEAD_ENGINE_LAUNCH_APPROVED: "true",
+        LIVE_PROSPECT_OUTREACH: "true",
+        STRIPE_MODE: "live",
+      };
+      let calls = 0;
+      const response = await handleLeadEngineRequest(
+        new Request("https://test/api/internal/lead-engine/analyze", {
+          method: "POST",
+          headers: {
+            "X-Admin-Key": "test",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            task: "project_analysis",
+            entityId: "test",
+            payload: {},
+          }),
+        }),
+        env,
+        {
+          fetcher: async () => {
+            calls++;
+            throw Error("unexpected provider call");
+          },
+        },
+      );
+      // Explicit permission passes the gate but must still fail without audit storage.
+      assert.equal(
+        response.status,
+        environment === "production" && permission === "true" ? 503 : 409,
+      );
+      assert.equal(calls, 0);
+    }
+  }
 });

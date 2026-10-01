@@ -11,7 +11,7 @@ const { Miniflare, convertV4MiniflareOptions } = wranglerRequire("miniflare");
 const { build } = wranglerRequire("esbuild");
 const bundle = await build({
   stdin: {
-    contents: `import worker from './worker/src/social-inbox-worker.js'; export default {async fetch(r,e,c){const gate=new URL(r.url).searchParams.get('gate');return await worker.fetch(r,{...e,...(gate==='production'?{LEAD_ENGINE_ENVIRONMENT:'production'}:gate==='recipient'?{LEAD_ENGINE_TEST_RECIPIENT:'wrong@example.test'}:{})},c);}};`,
+    contents: `import worker from './worker/src/social-inbox-worker.js'; export default {async fetch(r,e,c){const gate=new URL(r.url).searchParams.get('gate');return await worker.fetch(r,{...e,...(gate==='draft'?{LEAD_ENGINE_ENVIRONMENT:'production',LEAD_ENGINE_DRAFT_ANALYSIS_ENABLED:'true'}:gate==='legacy'?{LEAD_ENGINE_ENVIRONMENT:'production',LEAD_ENGINE_LAUNCH_APPROVED:'true',LIVE_PROSPECT_OUTREACH:'true',STRIPE_MODE:'live'}:gate==='production'?{LEAD_ENGINE_ENVIRONMENT:'production'}:gate==='recipient'?{LEAD_ENGINE_TEST_RECIPIENT:'wrong@example.test'}:{})},c);}};`,
     resolveDir: resolve("."),
   },
   bundle: true,
@@ -95,6 +95,8 @@ try {
     });
   assert.equal((await send("", "wrong")).status, 401);
   assert.equal((await send("?gate=production")).status, 409);
+  assert.equal((await send("?gate=legacy")).status, 409);
+  assert.equal((await send("?gate=draft", "wrong")).status, 401);
   assert.equal((await send("?gate=recipient")).status, 409);
   assert.equal((await send("", "test-admin", "{")).status, 400);
   assert.equal(calls, 0);
@@ -130,6 +132,28 @@ try {
   assert.equal(calls, 2);
   assert.ok(!JSON.stringify(rows).includes("test-gemini"));
   assert.ok(!JSON.stringify(rows).includes("private provider detail"));
+  fail = false;
+  response = await send("?gate=draft");
+  assert.equal(response.status, 200);
+  const draft = await response.json();
+  assert.equal(draft.draftOnly, true);
+  assert.equal(draft.humanReviewRequired, true);
+  assert.equal(draft.testOnly, false);
+  const diagnostics = await mf.dispatchFetch(
+    "http://local/api/internal/lead-engine/diagnostics?gate=draft",
+    { headers: { "X-Admin-Key": "test-admin" } },
+  );
+  const state = await diagnostics.json();
+  assert.equal(state.safeguards.launchGateClosed, true);
+  assert.equal(state.safeguards.draftAnalysisGateClosed, false);
+  assert.equal(state.state.liveProspectOutreach, false);
+  assert.equal(state.state.stripeMode, "test");
+  assert.equal(calls, 3);
+  const productionAudit = await DB.prepare(
+    "SELECT * FROM lead_engine_ai_runs WHERE environment = 'production'",
+  ).first();
+  assert.equal(productionAudit.status, "succeeded");
+  assert.deepEqual(JSON.parse(productionAudit.output_json), result);
   console.log(
     "PASS: CRM authenticated endpoint, staging/production gates, local migration, success/failure D1 audit, and safe error handling",
   );

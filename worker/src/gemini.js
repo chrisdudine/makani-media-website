@@ -160,6 +160,16 @@ const launchGateClosed = (env) => {
   );
 };
 
+// Independent permission for authenticated draft analysis; never authorizes delivery.
+const draftAnalysisGateClosed = (env) => {
+  const environment = clean(env.LEAD_ENGINE_ENVIRONMENT);
+  if (environment === "staging") return false;
+  return (
+    environment !== "production" ||
+    env.LEAD_ENGINE_DRAFT_ANALYSIS_ENABLED !== "true"
+  );
+};
+
 function instruction(task) {
   const shared =
     "You are the Makani Media CRM analysis layer. Return only schema-valid JSON. " +
@@ -341,6 +351,9 @@ export async function handleLeadEngineRequest(request, env, dependencies = {}) {
       state,
       safeguards: {
         launchGateClosed: launchGateClosed(env),
+        draftAnalysisGateClosed: draftAnalysisGateClosed(env),
+        draftOnly: true,
+        humanReviewRequired: true,
         prospectSendingImplemented: false,
         phoneAutomationImplemented: false,
         productionStripeImplemented: false,
@@ -352,8 +365,8 @@ export async function handleLeadEngineRequest(request, env, dependencies = {}) {
     url.pathname !== "/api/internal/lead-engine/analyze"
   )
     return json({ error: "Not found" }, 404);
-  if (launchGateClosed(env))
-    return json({ error: "Production launch gate is closed." }, 409);
+  if (draftAnalysisGateClosed(env))
+    return json({ error: "Draft analysis launch gate is closed." }, 409);
   if (
     state.environment !== "production" &&
     state.testRecipient !== "makanimediamaui@gmail.com"
@@ -431,6 +444,8 @@ export async function handleLeadEngineRequest(request, env, dependencies = {}) {
   }
   return json({
     success: true,
+    draftOnly: true,
+    humanReviewRequired: true,
     testOnly: state.environment !== "production",
     task,
     entityId,
