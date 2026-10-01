@@ -158,3 +158,36 @@ test("homepage image bytes, database migrations and deployment configuration mat
     );
   }
 });
+
+test("extracted local assets exist and are loaded in the original script order", async () => {
+  for (const page of [
+    "index",
+    "pricing",
+    "book-shoot",
+    "schedule-consultation",
+  ]) {
+    const html = await readFile(page + ".html", "utf8");
+    for (const [, asset] of html.matchAll(
+      /(?:href|src)="(assets\/[^"#?]+)"/g,
+    )) {
+      assert((await readFile(asset)).length > 0, asset);
+    }
+    const scripts = [...html.matchAll(/<script[^>]*src="([^"]+)"/g)].map(
+      (match) => match[1],
+    );
+    assert.deepEqual(scripts, [
+      "assets/js/mobile-menu.js",
+      ...(["book-shoot", "schedule-consultation"].includes(page)
+        ? [`assets/js/${page}.js`]
+        : []),
+    ]);
+    const css = await readFile(`assets/css/${page}.css`, "utf8");
+    for (const [, asset] of css.matchAll(/url\(["']?(\.\.\/[^"')]+)["']?\)/g)) {
+      assert(
+        (await readFile(resolve(dirname(`assets/css/${page}.css`), asset)))
+          .length > 0,
+        asset,
+      );
+    }
+  }
+});

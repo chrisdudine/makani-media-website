@@ -1,0 +1,20 @@
+# Isolated mock-only validation target. No production resources or provider keys.
+name = "makani-pr23-crm-validation"
+main = "cloud-validation-entry.js"
+compatibility_date = "2026-09-07"
+workers_dev = false
+preview_urls = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "makani-pr23-crm-validation"
+database_id = "71445c7d-8901-48ee-89be-847414e4f9c5"
+
+[vars]
+LEAD_ENGINE_ENVIRONMENT = "staging"
+LEAD_ENGINE_TEST_RECIPIENT = "makanimediamaui@gmail.com"
+LIVE_PROSPECT_OUTREACH = "false"
+STRIPE_MODE = "test"
+LEAD_ENGINE_LAUNCH_APPROVED = "false"
+SOCIAL_AI_ENABLED = "false"
+SOCIAL_AI_VERIFY = "false"
