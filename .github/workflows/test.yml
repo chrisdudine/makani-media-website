@@ -1,4 +1,4 @@
-name: Test Worker and CRM staging safeguards
+name: Test Worker, social review and CRM safeguards
 on:
   push:
     branches: [main]
@@ -19,5 +19,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      - run: pnpm test:runtime
       - run: pnpm test:crm-runtime
       - run: pnpm exec wrangler deploy --dry-run

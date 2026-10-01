@@ -17,14 +17,14 @@ Navigation markup stays in each HTML page because the pages intentionally have d
 
 ## Development and validation
 
-Use Node.js 22+ and pnpm. Run `pnpm install --frozen-lockfile` to install development-only formatting tools. Preview the public pages with any static server.
+Use Node.js 22.13+ and pnpm. Run `pnpm install --frozen-lockfile` to install locked development tools. Preview the public pages with any static server.
 
 - `pnpm format` formats the source; HTML whitespace sensitivity is strict.
 - `pnpm format:check` checks formatting without modifying files.
-- `pnpm test` parses every HTML/CSS/JS/JSON/Markdown file, rejects duplicate or corrupt source, checks the preserved page contracts and assets, and compares Worker responses and database calls.
+- `pnpm test` parses every HTML/CSS/JS/JSON/Markdown file, rejects duplicate or corrupt source, checks the preserved page contracts and assets, and runs booking, Calendar, email, estimate, migration, and Drive intake regressions without a separate baseline checkout.
 - `pnpm test:browser` starts a local comparison server. Open its printed address to compare the original and refactored pages at seven desktop/mobile widths. A final `PASS` is required; starting the server alone is not a test result.
 
-Set `BASELINE_DIR` to an untouched checkout of the baseline commit. It defaults to `../baseline`. For this cleanup, the baseline is `c547b7e9e387469b20502806201b07165ee7ccf8`:
+Historical extraction checks are retained under `tests/legacy/` and run only with `pnpm test:legacy-extraction`; they describe the original cleanup, not current product behavior. The browser comparison is also historical. For those checks only, set `BASELINE_DIR` to an untouched checkout of the baseline commit. It defaults to `../baseline`. For this cleanup, the baseline is `c547b7e9e387469b20502806201b07165ee7ccf8`:
 
 ```sh
 git worktree add --detach ../baseline c547b7e9e387469b20502806201b07165ee7ccf8
@@ -32,4 +32,10 @@ git worktree add --detach ../baseline c547b7e9e387469b20502806201b07165ee7ccf8
 
 The browser runner uses frozen time and intercepted API requests. It checks every captured state, including mobile menus, sticky headers, calendar selection and fallback, filled forms, request errors, pending requests, success resets, and missing-date feedback. It never submits to production. Results are saved outside the repository by default; set `TEST_OUTPUT` to change that location. The optional `?page=book-shoot.html&width=390` query isolates one comparison.
 
-Production deployment remains configured from `main`; this branch is for review only. Both existing Wrangler configurations and the Pages workflow are preserved. See [integration boundaries](docs/integrations.md) and [validation results](docs/cleanup-validation.md).
+Production deployment remains configured from `main`; this branch is for review only. Both Wrangler configurations target the same production Worker; the root configuration explicitly points to `worker/migrations`. The Pages workflow deploys only the static website. See [integration boundaries](docs/integrations.md) and [validation results](docs/cleanup-validation.md).
+
+The production social intake status and next task are in [the social automation handoff](docs/social-automation-handoff.md).
+
+Validate Worker packaging with `pnpm exec wrangler deploy --dry-run`. Apply pending migrations only after checking the remote ledger with `pnpm exec wrangler d1 migrations list makani-media --remote`. Never recreate the production database.
+
+AI analysis and review-only captions are documented in [Social AI drafts](docs/social-ai-drafts.md). Run `pnpm test:runtime` for the isolated workerd/D1 integration check; its Google calls are mocked.

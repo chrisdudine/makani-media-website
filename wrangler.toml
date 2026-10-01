@@ -1,6 +1,9 @@
 name = "makani-media-api"
-main = "worker/src/booking-wrapper.js"
+main = "worker/src/social-inbox-worker.js"
 compatibility_date = "2026-09-07"
+
+[triggers]
+crons = ["*/5 * * * *"]
 
 [[d1_databases]]
 binding = "DB"
@@ -12,6 +15,9 @@ migrations_dir = "worker/migrations"
 name = "EMAIL"
 
 [vars]
+SOCIAL_AI_ENABLED = "false"
+SOCIAL_AI_VERIFY = "false"
+SOCIAL_AI_MODEL = "gemini-3.5-flash-lite"
 GOOGLE_CALENDAR_ID = "makanimediamaui@gmail.com"
 GOOGLE_CALENDAR_ENABLED = "true"
 BOOKING_EMAIL_FROM = "bookings@mail.makani-media.com"
@@ -22,3 +28,15 @@ LIVE_PROSPECT_OUTREACH = "false"
 STRIPE_MODE = "test"
 LEAD_ENGINE_TEST_RECIPIENT = "makanimediamaui@gmail.com"
 GEMINI_MODEL = "gemini-2.5-flash"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+head_sampling_rate = 1
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 0.01

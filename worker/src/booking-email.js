@@ -67,16 +67,29 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
   const label = isConsultation ? "consultation" : "shoot request";
   const title = isConsultation ? "Consultation Booking" : "Shoot Request";
   const estimate = isConsultation ? null : buildShootEstimate(body);
+  const meetingDetails =
+    clean(body.meetingMethod) ||
+    clean(body.location) ||
+    clean(body.meetingLocation) ||
+    "Details provided with your booking";
 
   const customerText = isConsultation
     ? [
-        `Hi ${customerName},`,
+        `Aloha ${customerName},`,
         "",
-        `We received your Makani Media ${label} for ${bookingDateTime}.`,
-        "Your requested time has been reserved while we process the booking.",
+        "Thank you for booking a consultation with Makani Media. We’re looking forward to connecting with you, learning more about your project, and exploring how we can help bring your vision to life.",
         "",
-        "Thank you,",
+        "Your consultation is confirmed:",
+        `Date & time: ${bookingDateTime}`,
+        `Meeting: ${meetingDetails}`,
+        "",
+        "If there’s anything you’d like us to know before we meet, simply reply to this email.",
+        "",
+        "We look forward to talking with you!",
+        "",
+        "Mahalo,",
         "Makani Media",
+        "Vision from every angle.",
       ].join("\n")
     : [
         `Hi ${customerName},`,
@@ -101,7 +114,7 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
       ].join("\n");
 
   const customerHtml = isConsultation
-    ? `<p>Hi ${escapeHtml(customerName)},</p><p>We received your Makani Media ${escapeHtml(label)} for <strong>${escapeHtml(bookingDateTime)}</strong>.</p><p>Your requested time has been reserved while we process the booking.</p><p>Thank you,<br>Makani Media</p>`
+    ? `<p>Aloha ${escapeHtml(customerName)},</p><p>Thank you for booking a consultation with Makani Media. We’re looking forward to connecting with you, learning more about your project, and exploring how we can help bring your vision to life.</p><p><strong>Your consultation is confirmed:</strong><br><strong>Date &amp; time:</strong> ${escapeHtml(bookingDateTime)}<br><strong>Meeting:</strong> ${escapeHtml(meetingDetails)}</p><p>If there’s anything you’d like us to know before we meet, simply reply to this email.</p><p>We look forward to talking with you!</p><p>Mahalo,<br><strong>Makani Media</strong><br><em>Vision from every angle.</em></p>`
     : `<p>Hi ${escapeHtml(customerName)},</p><p>Thank you for choosing Makani Media and for taking the time to tell us about your project. We truly appreciate the opportunity to work with you and help bring your vision to life.</p><p>We’ve received your shoot request for <strong>${escapeHtml(bookingDateTime)}</strong>. We’ll review your project details, location, requested services, and scheduling requirements, then follow up to confirm the final scope and availability.</p><p><strong>Your preliminary estimate is ${escapeHtml(formatEstimateTotal(estimate))}.</strong></p><p>A detailed estimate is attached for your review. Please note that this is a preliminary estimate; final pricing may be adjusted after we review the location, airspace, permits, travel requirements, operating conditions, scheduling, and any custom services.</p><p>Thank you again for considering Makani Media. We’re grateful for the opportunity to support your project and look forward to creating something exceptional with you.</p><p>Warmly,</p><p><strong>Makani Media</strong><br>Drone + Visual Media<br>Maui, Hawaiʻi<br><a href="mailto:makanimediamaui@gmail.com">makanimediamaui@gmail.com</a><br><a href="https://makani-media.com">makani-media.com</a></p>`;
 
   const businessText = [
@@ -153,7 +166,9 @@ export async function deliverBookingEmails(env, { kind, body, projectId }) {
       to: customerEmail,
       from,
       replyTo: businessEmail,
-      subject: `Makani Media — ${title}`,
+      subject: isConsultation
+        ? "Your Makani Media Consultation Is Confirmed"
+        : `Makani Media — ${title}`,
       text: customerText,
       html: customerHtml,
       ...(customerAttachments ? { attachments: customerAttachments } : {}),

@@ -11,7 +11,7 @@ const { Miniflare, convertV4MiniflareOptions } = wranglerRequire("miniflare");
 const { build } = wranglerRequire("esbuild");
 const bundle = await build({
   stdin: {
-    contents: `import {handleLeadEngineRequest} from './worker/src/gemini.js'; export default {async fetch(r,e){const gate=new URL(r.url).searchParams.get('gate');return await handleLeadEngineRequest(r,{...e,...(gate==='production'?{LEAD_ENGINE_ENVIRONMENT:'production'}:gate==='recipient'?{LEAD_ENGINE_TEST_RECIPIENT:'wrong@example.test'}:{})})||new Response('missing',{status:404});}};`,
+    contents: `import worker from './worker/src/social-inbox-worker.js'; export default {async fetch(r,e,c){const gate=new URL(r.url).searchParams.get('gate');return await worker.fetch(r,{...e,...(gate==='production'?{LEAD_ENGINE_ENVIRONMENT:'production'}:gate==='recipient'?{LEAD_ENGINE_TEST_RECIPIENT:'wrong@example.test'}:{})},c);}};`,
     resolveDir: resolve("."),
   },
   bundle: true,
